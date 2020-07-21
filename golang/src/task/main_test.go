@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 	"testing"
+	"time"
 )
 
 type scenarioTester struct {
@@ -16,6 +17,101 @@ type scenarioTester struct {
 	outScanner *bufio.Scanner
 }
 
+func TestRunToday(t *testing.T) {
+	// setup input/output
+	inPR, inPW := io.Pipe()
+	defer inPR.Close()
+	outPR, outPW := io.Pipe()
+	defer outPR.Close()
+	tester := &scenarioTester{
+		T:          t,
+		inWriter:   inPW,
+		outReader:  outPR,
+		outScanner: bufio.NewScanner(outPR),
+	}
+
+	// run main program
+	var wg sync.WaitGroup
+	initTaskListAndRun(wg, inPR, outPW)
+
+	// run command-line scenario
+	fmt.Println("(show empty)")
+	tester.execute("show")
+
+	fmt.Println("(add project)")
+	tester.execute("add project secrets")
+	fmt.Println("(add tasks)")
+	tester.execute("add task secrets Eat more donuts.")
+	tester.execute("add task secrets Destroy all humans.")
+
+	fmt.Println("(deadline inclusion)")
+	tester.execute("deadline 1 20200721")
+	tester.execute("deadline 2 20200730")
+
+	fmt.Println("(today)")
+	tester.execute("today")
+	tester.readLines([]string{
+		"secrets",
+		"    [ ] 1: (20200721) Eat more donuts.",
+		"",
+	})
+
+	time.Now()
+
+	fmt.Println("(quit)")
+	tester.execute("quit")
+
+	// make sure main program has quit
+	inPW.Close()
+	wg.Wait()
+}
+
+func TestRunWithDeadline(t *testing.T) {
+	// setup input/output
+	inPR, inPW := io.Pipe()
+	defer inPR.Close()
+	outPR, outPW := io.Pipe()
+	defer outPR.Close()
+	tester := &scenarioTester{
+		T:          t,
+		inWriter:   inPW,
+		outReader:  outPR,
+		outScanner: bufio.NewScanner(outPR),
+	}
+
+	// run main program
+	var wg sync.WaitGroup
+	initTaskListAndRun(wg, inPR, outPW)
+	// run command-line scenario
+	fmt.Println("(show empty)")
+	tester.execute("show")
+
+	fmt.Println("(add project)")
+	tester.execute("add project secrets")
+	fmt.Println("(add tasks)")
+	tester.execute("add task secrets Eat more donuts.")
+	tester.execute("add task secrets Destroy all humans.")
+
+	fmt.Println("(deadline inclusion)")
+	tester.execute("deadline 1 1595352997")
+	tester.execute("deadline 2 1595352922")
+
+	fmt.Println("(show tasks)")
+	tester.execute("show")
+	tester.readLines([]string{
+		"secrets",
+		"    [ ] 1: (1595352997) Eat more donuts.",
+		"    [ ] 2: (1595352922) Destroy all humans.",
+		"",
+	})
+
+	fmt.Println("(quit)")
+	tester.execute("quit")
+
+	// make sure main program has quit
+	inPW.Close()
+	wg.Wait()
+}
 func TestRun(t *testing.T) {
 	// setup input/output
 	inPR, inPW := io.Pipe()
@@ -31,12 +127,7 @@ func TestRun(t *testing.T) {
 
 	// run main program
 	var wg sync.WaitGroup
-	go func() {
-		wg.Add(1)
-		NewTaskList(inPR, outPW).Run()
-		outPW.Close()
-		wg.Done()
-	}()
+	initTaskListAndRun(wg, inPR, outPW)
 
 	// run command-line scenario
 	fmt.Println("(show empty)")
@@ -96,6 +187,15 @@ func TestRun(t *testing.T) {
 	// make sure main program has quit
 	inPW.Close()
 	wg.Wait()
+}
+
+func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter) {
+	go func() {
+		wg.Add(1)
+		NewTaskList(inPR, outPW).Run()
+		outPW.Close()
+		wg.Done()
+	}()
 }
 
 // execute calls a command, by writing it into the scenario writer.

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -27,10 +26,17 @@ import (
  *          but change the command to 'view by project'
  */
 
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
 const (
 	// Quit is the text command used to quit the task manager.
-	Quit   string = "quit"
-	prompt string = "> "
+	TaskNotFoundErr        = Error("Task not found")
+	Quit            string = "quit"
+	prompt          string = "> "
 )
 
 // TaskList is a set of tasks, grouped by project.
@@ -83,6 +89,10 @@ func (l *TaskList) execute(cmdLine string) {
 		l.uncheck(args[1])
 	case "help":
 		l.help()
+	case "deadline":
+		l.deadline(args[1], args[2])
+	case "today":
+		l.today()
 	default:
 		l.error(command)
 	}
@@ -102,6 +112,31 @@ func (l *TaskList) error(command string) {
 	fmt.Fprintf(l.out, "Unknown command \"%s\".\n", command)
 }
 
+func (l *TaskList) today() {
+	// sort projects (to make output deterministic)
+	sortedProjects := make([]string, 0, len(l.projectTasks))
+	for project := range l.projectTasks {
+		sortedProjects = append(sortedProjects, project)
+	}
+	sort.Sort(sort.StringSlice(sortedProjects))
+
+	// show projects sequentially
+	for _, project := range sortedProjects {
+		tasks := l.projectTasks[project]
+		fmt.Fprintf(l.out, "%s\n", project)
+		for _, task := range tasks {
+			if task.IsDueToday() {
+				done := ' '
+				if task.IsDone() {
+					done = 'X'
+				}
+				fmt.Fprintf(l.out, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
+			}
+		}
+		fmt.Fprintln(l.out)
+	}
+}
+
 func (l *TaskList) show() {
 	// sort projects (to make output deterministic)
 	sortedProjects := make([]string, 0, len(l.projectTasks))
@@ -119,7 +154,7 @@ func (l *TaskList) show() {
 			if task.IsDone() {
 				done = 'X'
 			}
-			fmt.Fprintf(l.out, "    [%c] %d: %s\n", done, task.GetID(), task.GetDescription())
+			fmt.Fprintf(l.out, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
 		}
 		fmt.Fprintln(l.out)
 	}
@@ -161,25 +196,47 @@ func (l *TaskList) uncheck(idString string) {
 }
 
 func (l *TaskList) setDone(idString string, done bool) {
-	id, err := strconv.ParseInt(idString, 10, 64)
+	task, err := l.getTaskBy(idString)
+	if err != nil {
+		return
+	}
+	task.done = done
+}
+
+func (l *TaskList) getTaskBy(idString string) (*Task, error) {
+	id, err := NewIdentifier(idString)
 	if err != nil {
 		fmt.Fprintf(l.out, "Invalid ID \"%s\".\n", idString)
-		return
+		return nil, err
 	}
 
 	for _, tasks := range l.projectTasks {
 		for _, task := range tasks {
 			if task.GetID() == id {
-				task.SetDone(done)
-				return
+				return task, nil
 			}
 		}
 	}
 
 	fmt.Fprintf(l.out, "Task with ID \"%d\" not found.\n", id)
+	return nil, TaskNotFoundErr
 }
 
 func (l *TaskList) nextID() int64 {
 	l.lastID++
 	return l.lastID
+}
+
+func (l *TaskList) deadline(id string, deadlineString string) {
+	deadline, err := NewDeadline(deadlineString)
+	if err != nil {
+		return
+	}
+
+	task, err := l.getTaskBy(id)
+	if err != nil {
+		return
+	}
+
+	task.deadline = deadline
 }
