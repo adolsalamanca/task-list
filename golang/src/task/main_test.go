@@ -53,6 +53,7 @@ func TestRunToday(t *testing.T) {
 	tester.readLines([]string{
 		"secrets",
 		"    [ ] 1: (20200721) Eat more donuts.",
+		"    [ ] 2: (20200730) Destroy all humans.",
 		"",
 	})
 
