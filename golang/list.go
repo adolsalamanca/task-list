@@ -92,6 +92,9 @@ func (l *TaskList) execute(cmdLine string) error {
 	case "show":
 		l.show()
 	case "add":
+		if len(args) < 2 {
+			return fmt.Errorf("could not execute add, it requires at least 2 parameters")
+		}
 		l.add(args[1:])
 	case "check":
 		l.check(args[1])
@@ -175,9 +178,6 @@ func (l *TaskList) show() {
 }
 
 func (l *TaskList) add(args []string) {
-	if len(args) < 2 {
-		panic("no params")
-	}
 	projectName := args[1]
 	if args[0] == "project" {
 		l.addProject(projectName)

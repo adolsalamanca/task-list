@@ -208,7 +208,6 @@ func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 	}
 }
 
-/*
 func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	// setup input/output
 	inPR, inPW := io.Pipe()
@@ -228,16 +227,26 @@ func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	errorsChan := make(chan error)
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 	fmt.Println("(deadline without params)")
-	tester.execute("deadline")
+	tester.execute("add")
 
-	fmt.Println("(quit)")
-	tester.execute("quit")
-
-	// make sure main program has quit
+	// TODO: If quit is sent after this, the program just waits. Why?
 	inPW.Close()
 	wg.Wait()
+
+	var err error
+	select {
+	case err = <-errorsChan:
+		println(err)
+	case <-shutdownChan:
+		println("finished")
+	}
+
+	if err == nil {
+		t.Fail()
+	}
 }
 
+/*
 func TestRun(t *testing.T) {
 	// setup input/output
 	inPR, inPW := io.Pipe()
