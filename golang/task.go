@@ -67,7 +67,7 @@ func (t *Task) GetDescription() string {
 	return t.description
 }
 
-// IsDone returns whether the task is done or not.
+// IsDone returns whether the task is taskDone or not.
 func (t *Task) IsDone() bool {
 	return t.done
 }
@@ -89,8 +89,12 @@ func (t *Task) GetDeadline() string {
 	return t.deadline.String()
 }
 
-func (t *Task) IsDueToday() bool {
-	if t.deadline.date <= fmt.Sprintf("%04d%02d%02d\n", time.Now().Year(), time.Now().Month(), time.Now().Day()) {
+func (t *Task) IsPreviousToCurrentDate() bool {
+	return t.IsPreviousTo(time.Now().Year(), int(time.Now().Month()), time.Now().Day())
+}
+
+func (t *Task) IsPreviousTo(year, month, day int) bool {
+	if t.deadline.date <= fmt.Sprintf("%04d%02d%02d\n", year, month, day) {
 		return true
 	}
 	return false

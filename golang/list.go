@@ -125,7 +125,7 @@ func (l *TaskList) today() {
 		tasks := l.projectTasks[project]
 		fmt.Fprintf(l.out, "%s\n", project)
 		for _, task := range tasks {
-			if task.IsDueToday() {
+			if task.IsPreviousToCurrentDate() {
 				done := ' '
 				if task.IsDone() {
 					done = 'X'
