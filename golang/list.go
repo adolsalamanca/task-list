@@ -2,10 +2,15 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
+)
+
+var (
+	invalidParamsDeadline = errors.New("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
 )
 
 /*
@@ -60,18 +65,20 @@ func NewTaskList(in io.Reader, out io.Writer) *TaskList {
 
 // Run runs the command loop of the task manager.
 // Sequentially executes any given command, until the user types the Quit message.
-func (l *TaskList) Run() {
+func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 	scanner := bufio.NewScanner(l.in)
 
 	fmt.Fprint(l.out, prompt)
 	for scanner.Scan() {
 		cmdLine := scanner.Text()
 		if cmdLine == Quit {
+			shutdownChan <- true
 			return
 		}
 
 		err := l.execute(cmdLine)
 		if err != nil {
+			errorsChan <- err
 			fmt.Printf("program exited, %v", err)
 		}
 		fmt.Fprint(l.out, prompt)
@@ -169,8 +176,7 @@ func (l *TaskList) show() {
 
 func (l *TaskList) add(args []string) {
 	if len(args) < 2 {
-		fmt.Fprintln(l.out, "Missing parameters for \"add\" command.")
-		return
+		panic("no params")
 	}
 	projectName := args[1]
 	if args[0] == "project" {

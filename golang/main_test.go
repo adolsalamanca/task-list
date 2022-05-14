@@ -17,6 +17,33 @@ type scenarioTester struct {
 	outScanner *bufio.Scanner
 }
 
+// TODO: Make use of this struct in all tests
+type TaskListRunParams struct {
+	wg           sync.WaitGroup
+	inPR         *io.PipeReader
+	inPW         *io.PipeWriter
+	outPW        *io.PipeWriter
+	outPR        *io.PipeReader
+	errorsChan   chan error
+	shutdownChan chan bool
+}
+
+/*
+// TODO: Make use of this func instead of repeat in all tests
+func NewTaskListRunParams() TaskListRunParams {
+	inPR, inPW := io.Pipe()
+	outPR, outPW := io.Pipe()
+	return TaskListRunParams{
+		wg:           sync.WaitGroup{},
+		inPR:         inPR,
+		inPW:         inPW,
+		outPW:        outPW,
+		outPR:        outPR,
+		errorsChan:   nil,
+		shutdownChan: nil,
+	}
+}*/
+
 func TestRunToday(t *testing.T) {
 	// setup input/output
 	inPR, inPW := io.Pipe()
@@ -32,7 +59,9 @@ func TestRunToday(t *testing.T) {
 
 	// run main program
 	var wg sync.WaitGroup
-	initTaskListAndRun(wg, inPR, outPW)
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
 	// run command-line scenario
 	fmt.Println("(show empty)")
@@ -65,6 +94,18 @@ func TestRunToday(t *testing.T) {
 	// make sure main program has quit
 	inPW.Close()
 	wg.Wait()
+
+	var err error
+	select {
+	case err = <-errorsChan:
+		println(err)
+	case <-shutdownChan:
+		println("finished")
+	}
+
+	if err != nil {
+		t.Fail()
+	}
 }
 
 func TestRunWithDeadline(t *testing.T) {
@@ -82,7 +123,9 @@ func TestRunWithDeadline(t *testing.T) {
 
 	// run main program
 	var wg sync.WaitGroup
-	initTaskListAndRun(wg, inPR, outPW)
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 	// run command-line scenario
 	fmt.Println("(show empty)")
 	tester.execute("show")
@@ -112,6 +155,18 @@ func TestRunWithDeadline(t *testing.T) {
 	// make sure main program has quit
 	inPW.Close()
 	wg.Wait()
+
+	var err error
+	select {
+	case err = <-errorsChan:
+		println(err)
+	case <-shutdownChan:
+		println("finished")
+	}
+
+	if err != nil {
+		t.Fail()
+	}
 }
 
 func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
@@ -129,8 +184,49 @@ func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 
 	// run main program
 	var wg sync.WaitGroup
-	initTaskListAndRun(wg, inPR, outPW)
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
+	fmt.Println("(deadline without params)")
+	tester.execute("deadline")
+
+	// make sure main program has quit
+	inPW.Close()
+	wg.Wait()
+
+	var err error
+	select {
+	case err = <-errorsChan:
+		println(err)
+	case <-shutdownChan:
+		println("finished")
+	}
+
+	if err == nil {
+		t.Fail()
+	}
+}
+
+/*
+func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
+	// setup input/output
+	inPR, inPW := io.Pipe()
+	defer inPR.Close()
+	outPR, outPW := io.Pipe()
+	defer outPR.Close()
+	tester := &scenarioTester{
+		T:          t,
+		inWriter:   inPW,
+		outReader:  outPR,
+		outScanner: bufio.NewScanner(outPR),
+	}
+
+	// run main program
+	var wg sync.WaitGroup
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 	fmt.Println("(deadline without params)")
 	tester.execute("deadline")
 
@@ -157,7 +253,9 @@ func TestRun(t *testing.T) {
 
 	// run main program
 	var wg sync.WaitGroup
-	initTaskListAndRun(wg, inPR, outPW)
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
 	// run command-line scenario
 	fmt.Println("(show empty)")
@@ -219,10 +317,12 @@ func TestRun(t *testing.T) {
 	wg.Wait()
 }
 
-func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter) {
+*/
+
+func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter, errorsChan chan error, shutdownChan chan bool) {
 	go func() {
 		wg.Add(1)
-		NewTaskList(inPR, outPW).Run()
+		NewTaskList(inPR, outPW).Run(errorsChan, shutdownChan)
 		outPW.Close()
 		wg.Done()
 	}()
@@ -230,19 +330,19 @@ func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWr
 
 // execute calls a command, by writing it into the scenario writer.
 // It first reads the command prompt, then sends the command.
-func (t *scenarioTester) execute(cmd string) {
+func (t *scenarioTester) execute(cmd string) error {
 	p := make([]byte, len(prompt))
 	_, err := t.outReader.Read(p)
 	if err != nil {
-		t.Errorf("Prompt could not be read: %v", err)
-		return
+		return fmt.Errorf("prompt could not be read: %v", err)
 	}
 	if string(p) != prompt {
 		t.Errorf("Invalid prompt, expected \"%s\", got \"%s\"", prompt, string(p))
-		return
+		return fmt.Errorf("invalid prompt")
 	}
 	// send command
 	fmt.Fprintln(t.inWriter, cmd)
+	return nil
 }
 
 // readLines reads lines from the scenario scanner, making sure they match

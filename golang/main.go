@@ -8,5 +8,21 @@ import (
 )
 
 func main() {
-	NewTaskList(os.Stdin, os.Stdout).Run()
+	taskList := NewTaskList(os.Stdin, os.Stdout)
+	shutdownChan := make(chan bool)
+	errorsChan := make(chan error)
+
+	go func() {
+		taskList.Run(errorsChan, shutdownChan)
+	}()
+
+	select {
+	case err := <-errorsChan:
+		println(err)
+		os.Exit(1)
+	case <-shutdownChan:
+		println("finished")
+		os.Exit(0)
+	}
+
 }

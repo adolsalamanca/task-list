@@ -36,3 +36,9 @@ Similarly, the scenario expects the `TaskList.Run()` to finish (reception of the
 In the case of deadlocks, test output will be unusable: to help with debugging,
 current scenario steps are logged on standard output and displayed when using
 `./run_tests.sh -v`.
+
+
+##TODOS
+
+* Fix check
+* Update help
