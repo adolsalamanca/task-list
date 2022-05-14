@@ -113,6 +113,35 @@ func TestRunWithDeadline(t *testing.T) {
 	inPW.Close()
 	wg.Wait()
 }
+
+func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
+	// setup input/output
+	inPR, inPW := io.Pipe()
+	defer inPR.Close()
+	outPR, outPW := io.Pipe()
+	defer outPR.Close()
+	tester := &scenarioTester{
+		T:          t,
+		inWriter:   inPW,
+		outReader:  outPR,
+		outScanner: bufio.NewScanner(outPR),
+	}
+
+	// run main program
+	var wg sync.WaitGroup
+	initTaskListAndRun(wg, inPR, outPW)
+
+	fmt.Println("(deadline without params)")
+	tester.execute("deadline")
+
+	fmt.Println("(quit)")
+	tester.execute("quit")
+
+	// make sure main program has quit
+	inPW.Close()
+	wg.Wait()
+}
+
 func TestRun(t *testing.T) {
 	// setup input/output
 	inPR, inPW := io.Pipe()

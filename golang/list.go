@@ -70,12 +70,15 @@ func (l *TaskList) Run() {
 			return
 		}
 
-		l.execute(cmdLine)
+		err := l.execute(cmdLine)
+		if err != nil {
+			fmt.Printf("program exited, %v", err)
+		}
 		fmt.Fprint(l.out, prompt)
 	}
 }
 
-func (l *TaskList) execute(cmdLine string) {
+func (l *TaskList) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
 	command := args[0]
 	switch command {
@@ -90,12 +93,16 @@ func (l *TaskList) execute(cmdLine string) {
 	case "help":
 		l.help()
 	case "deadline":
+		if len(args) < 2 {
+			return fmt.Errorf("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
+		}
 		l.deadline(args[1], args[2])
 	case "today":
 		l.today()
 	default:
 		l.error(command)
 	}
+	return nil
 }
 
 func (l *TaskList) help() {
