@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestIsDueToday(t *testing.T) {
+func TestIsValidDate(t *testing.T) {
 	//
 	type tt struct {
 		name string
