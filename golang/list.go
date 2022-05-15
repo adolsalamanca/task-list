@@ -174,9 +174,8 @@ func (l *TaskList) show() {
 	}
 }
 
-// getSortedProjectNames returns the projects sorted, given a map m
-// where key of m is a project name and m[key] returns a slice of pointers to tasks
-// i,e: returns the tasks of that project.
+// getSortedProjectNames returns all project names sorted, given a map m
+// of (key)projectName and (values) slice of tasks
 func getSortedProjectNames(projectTasks map[projectName][]*Task) []string {
 	projectNames := convertMapOfProjectNamesToSliceOfProjectNames(projectTasks)
 	sort.Sort(sort.StringSlice(projectNames))
