@@ -4,6 +4,7 @@
 package main
 
 import (
+	"log"
 	"os"
 )
 
@@ -18,10 +19,10 @@ func main() {
 
 	select {
 	case err := <-errorsChan:
-		println(err)
+		log.Println(err)
 		os.Exit(1)
 	case <-shutdownChan:
-		println("finished")
+		log.Println("finished")
 		os.Exit(0)
 	}
 

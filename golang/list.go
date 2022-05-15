@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"sort"
 	"strings"
 )
@@ -79,7 +80,7 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 		err := l.execute(cmdLine)
 		if err != nil {
 			errorsChan <- err
-			fmt.Printf("program exited, %v", err)
+			log.Printf("program exited, %v", err)
 		}
 		fmt.Fprint(l.out, prompt)
 	}

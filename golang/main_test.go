@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -45,7 +46,10 @@ func NewTaskListRunParams() TaskListRunParams {
 }*/
 
 func TestRunToday(t *testing.T) {
+
+	log.SetOutput(io.Discard)
 	// setup input/output
+	log.SetOutput(io.Discard)
 	inPR, inPW := io.Pipe()
 	defer inPR.Close()
 	outPR, outPW := io.Pipe()
@@ -64,20 +68,20 @@ func TestRunToday(t *testing.T) {
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
 	// run command-line scenario
-	fmt.Println("(show empty)")
+	log.Println("(show empty)")
 	tester.execute("show")
 
-	fmt.Println("(add project)")
+	log.Println("(add project)")
 	tester.execute("add project secrets")
-	fmt.Println("(add tasks)")
+	log.Println("(add tasks)")
 	tester.execute("add task secrets Eat more donuts.")
 	tester.execute("add task secrets Destroy all humans.")
 
-	fmt.Println("(deadline inclusion)")
+	log.Println("(deadline inclusion)")
 	tester.execute("deadline 1 20200721")
 	tester.execute("deadline 2 20200730")
 
-	fmt.Println("(today)")
+	log.Println("(today)")
 	tester.execute("today")
 	tester.readLines([]string{
 		"secrets",
@@ -88,7 +92,7 @@ func TestRunToday(t *testing.T) {
 
 	time.Now()
 
-	fmt.Println("(quit)")
+	log.Println("(quit)")
 	tester.execute("quit")
 
 	// make sure main program has quit
@@ -98,9 +102,9 @@ func TestRunToday(t *testing.T) {
 	var err error
 	select {
 	case err = <-errorsChan:
-		println(err)
+		log.Printf("program failed, %s", err)
 	case <-shutdownChan:
-		println("finished")
+		log.Println("finished")
 	}
 
 	if err != nil {
@@ -110,6 +114,7 @@ func TestRunToday(t *testing.T) {
 
 func TestRunWithDeadline(t *testing.T) {
 	// setup input/output
+	log.SetOutput(io.Discard)
 	inPR, inPW := io.Pipe()
 	defer inPR.Close()
 	outPR, outPW := io.Pipe()
@@ -127,20 +132,20 @@ func TestRunWithDeadline(t *testing.T) {
 	errorsChan := make(chan error)
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 	// run command-line scenario
-	fmt.Println("(show empty)")
+	log.Println("(show empty)")
 	tester.execute("show")
 
-	fmt.Println("(add project)")
+	log.Println("(add project)")
 	tester.execute("add project secrets")
-	fmt.Println("(add tasks)")
+	log.Println("(add tasks)")
 	tester.execute("add task secrets Eat more donuts.")
 	tester.execute("add task secrets Destroy all humans.")
 
-	fmt.Println("(deadline inclusion)")
+	log.Println("(deadline inclusion)")
 	tester.execute("deadline 1 1595352997")
 	tester.execute("deadline 2 1595352922")
 
-	fmt.Println("(show tasks)")
+	log.Println("(show tasks)")
 	tester.execute("show")
 	tester.readLines([]string{
 		"secrets",
@@ -149,7 +154,7 @@ func TestRunWithDeadline(t *testing.T) {
 		"",
 	})
 
-	fmt.Println("(quit)")
+	log.Println("(quit)")
 	tester.execute("quit")
 
 	// make sure main program has quit
@@ -159,9 +164,9 @@ func TestRunWithDeadline(t *testing.T) {
 	var err error
 	select {
 	case err = <-errorsChan:
-		println(err)
+		log.Printf("program failed, %s", err)
 	case <-shutdownChan:
-		println("finished")
+		log.Println("finished")
 	}
 
 	if err != nil {
@@ -171,6 +176,7 @@ func TestRunWithDeadline(t *testing.T) {
 
 func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 	// setup input/output
+	log.SetOutput(io.Discard)
 	inPR, inPW := io.Pipe()
 	defer inPR.Close()
 	outPR, outPW := io.Pipe()
@@ -188,7 +194,7 @@ func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 	errorsChan := make(chan error)
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
-	fmt.Println("(deadline without params)")
+	log.Println("(deadline without params)")
 	tester.execute("deadline")
 
 	// make sure main program has quit
@@ -198,9 +204,9 @@ func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 	var err error
 	select {
 	case err = <-errorsChan:
-		println(err)
+		log.Printf("program failed, %s", err)
 	case <-shutdownChan:
-		println("finished")
+		log.Println("finished")
 	}
 
 	if err == nil {
@@ -210,6 +216,7 @@ func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
 
 func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	// setup input/output
+	log.SetOutput(io.Discard)
 	inPR, inPW := io.Pipe()
 	defer inPR.Close()
 	outPR, outPW := io.Pipe()
@@ -226,7 +233,7 @@ func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	shutdownChan := make(chan bool)
 	errorsChan := make(chan error)
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
-	fmt.Println("(deadline without params)")
+	log.Println("(deadline without params)")
 	tester.execute("add")
 
 	// TODO: If quit is sent after this, the program just waits. Why?
@@ -236,9 +243,9 @@ func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	var err error
 	select {
 	case err = <-errorsChan:
-		println(err)
+		log.Printf("program failed, %s", err)
 	case <-shutdownChan:
-		println("finished")
+		log.Println("finished")
 	}
 
 	if err == nil {
@@ -246,9 +253,9 @@ func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
 	}
 }
 
-/*
 func TestRun(t *testing.T) {
 	// setup input/output
+	log.SetOutput(io.Discard)
 	inPR, inPW := io.Pipe()
 	defer inPR.Close()
 	outPR, outPW := io.Pipe()
@@ -267,16 +274,16 @@ func TestRun(t *testing.T) {
 	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
 
 	// run command-line scenario
-	fmt.Println("(show empty)")
+	log.Println("(show empty)")
 	tester.execute("show")
 
-	fmt.Println("(add project)")
+	log.Println("(add project)")
 	tester.execute("add project secrets")
-	fmt.Println("(add tasks)")
+	log.Println("(add tasks)")
 	tester.execute("add task secrets Eat more donuts.")
 	tester.execute("add task secrets Destroy all humans.")
 
-	fmt.Println("(show tasks)")
+	log.Println("(show tasks)")
 	tester.execute("show")
 	tester.readLines([]string{
 		"secrets",
@@ -285,9 +292,9 @@ func TestRun(t *testing.T) {
 		"",
 	})
 
-	fmt.Println("(add second project)")
+	log.Println("(add second project)")
 	tester.execute("add project training")
-	fmt.Println("(add more tasks)")
+	log.Println("(add more tasks)")
 	tester.execute("add task training Four Elements of Simple Design")
 	tester.execute("add task training SOLID")
 	tester.execute("add task training Coupling and Cohesion")
@@ -295,13 +302,13 @@ func TestRun(t *testing.T) {
 	tester.execute("add task training Outside-In TDD")
 	tester.execute("add task training Interaction-Driven Design")
 
-	fmt.Println("(check tasks)")
+	log.Println("(check tasks)")
 	tester.execute("check 1")
 	tester.execute("check 3")
 	tester.execute("check 5")
 	tester.execute("check 6")
 
-	fmt.Println("(show completed tasks)")
+	log.Println("(show completed tasks)")
 	tester.execute("show")
 	tester.readLines([]string{
 		"secrets",
@@ -318,15 +325,26 @@ func TestRun(t *testing.T) {
 		"",
 	})
 
-	fmt.Println("(quit)")
+	log.Println("(quit)")
 	tester.execute("quit")
 
 	// make sure main program has quit
 	inPW.Close()
 	wg.Wait()
-}
 
-*/
+	var err error
+	select {
+	case err = <-errorsChan:
+		log.Printf("program failed, %s", err)
+	case <-shutdownChan:
+		log.Println("finished")
+	}
+
+	if err != nil {
+		t.Fail()
+	}
+
+}
 
 func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter, errorsChan chan error, shutdownChan chan bool) {
 	go func() {
