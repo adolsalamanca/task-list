@@ -3,14 +3,13 @@ package main
 import "testing"
 
 func TestIsPreviousToCurrentDate(t *testing.T) {
-	//
-	type tt struct {
+	type testData struct {
 		name string
 		task Task
 		want bool
 	}
 
-	tests := []tt{
+	tests := []testData{
 		{
 			name: "should return true as input was a valid date",
 			task: Task{
@@ -53,13 +52,15 @@ func TestTask_IsPreviousTo(t1 *testing.T) {
 		month int
 		day   int
 	}
-	tests := []struct {
+
+	type testData struct {
 		name       string
 		taskFields taskFields
 		date       date
 		want       bool
-	}{
+	}
 
+	tests := []testData{
 		{
 			name: "should return true as task deadline is previous to specified date",
 			taskFields: taskFields{
