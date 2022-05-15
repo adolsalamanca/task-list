@@ -45,12 +45,14 @@ const (
 	prompt          string = "> "
 )
 
+type projectName string
+
 // TaskList is a set of tasks, grouped by project.
 type TaskList struct {
 	in  io.Reader
 	out io.Writer
 
-	projectTasks map[string][]*Task
+	projectTasks map[projectName][]*Task
 	lastID       int64
 }
 
@@ -59,7 +61,7 @@ func NewTaskList(in io.Reader, out io.Writer) *TaskList {
 	return &TaskList{
 		in:           in,
 		out:          out,
-		projectTasks: make(map[string][]*Task),
+		projectTasks: make(map[projectName][]*Task),
 		lastID:       0,
 	}
 }
@@ -89,6 +91,7 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 func (l *TaskList) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
 	command := args[0]
+
 	switch command {
 	case "show":
 		l.show()
@@ -134,13 +137,13 @@ func (l *TaskList) today() {
 	// sort projects (to make output deterministic)
 	sortedProjects := make([]string, 0, len(l.projectTasks))
 	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, project)
+		sortedProjects = append(sortedProjects, string(project))
 	}
 	sort.Sort(sort.StringSlice(sortedProjects))
 
 	// show projects sequentially
 	for _, project := range sortedProjects {
-		tasks := l.projectTasks[project]
+		tasks := l.projectTasks[projectName(project)]
 		fmt.Fprintf(l.out, "%s\n", project)
 		for _, task := range tasks {
 			if task.IsPreviousToCurrentDate() {
@@ -159,13 +162,13 @@ func (l *TaskList) show() {
 	// sort projects (to make output deterministic)
 	sortedProjects := make([]string, 0, len(l.projectTasks))
 	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, project)
+		sortedProjects = append(sortedProjects, string(project))
 	}
 	sort.Sort(sort.StringSlice(sortedProjects))
 
 	// show projects sequentially
 	for _, project := range sortedProjects {
-		tasks := l.projectTasks[project]
+		tasks := l.projectTasks[projectName(project)]
 		fmt.Fprintf(l.out, "%s\n", project)
 		for _, task := range tasks {
 			done := ' '
@@ -186,22 +189,22 @@ func (l *TaskList) add(args []string) {
 	}
 	if args[0] == "task" {
 		description := strings.Join(args[2:], " ")
-		l.addTask(projectName, description)
+		l.addTaskToProject(projectName, description)
 		return
 	}
 }
 
 func (l *TaskList) addProject(name string) {
-	l.projectTasks[name] = make([]*Task, 0)
+	l.projectTasks[projectName(name)] = make([]*Task, 0)
 }
 
-func (l *TaskList) addTask(projectName, description string) {
-	tasks, ok := l.projectTasks[projectName]
+func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
+	tasks, ok := l.projectTasks[projectName(projectNameStr)]
 	if !ok {
-		fmt.Fprintf(l.out, "Could not find a project with the name \"%s\".\n", projectName)
+		fmt.Fprintf(l.out, "Could not find a project with the name \"%s\".\n", projectNameStr)
 		return
 	}
-	l.projectTasks[projectName] = append(tasks, NewTask(l.nextID(), description, false))
+	l.projectTasks[projectName(projectNameStr)] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
 }
 
 func (l *TaskList) check(idString string) {
