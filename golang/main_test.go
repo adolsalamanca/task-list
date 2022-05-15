@@ -239,7 +239,7 @@ func (t *scenarioTester) readLines(lines []string) {
 		}
 	}
 	if err := t.outScanner.Err(); err != nil {
-		t.Fatalf("Could not read input: %v", err)
+		t.Errorf("Could not read input: %v", err)
 	}
 }
 
@@ -253,6 +253,6 @@ func (t *scenarioTester) discardLines(n int) {
 		}
 	}
 	if err := t.outScanner.Err(); err != nil {
-		t.Fatalf("Could not read input: %v", err)
+		t.Errorf("Could not read input: %v", err)
 	}
 }

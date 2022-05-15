@@ -34,7 +34,7 @@ func TestIsPreviousToCurrentDate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := tc.task.IsPreviousToCurrentDate()
 			if tc.want != got {
-				t.Fatalf("expected: %v, got: %v", tc.want, got)
+				t.Errorf("expected: %v, got: %v", tc.want, got)
 			}
 		})
 	}
