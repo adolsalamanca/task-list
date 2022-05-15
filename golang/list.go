@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-var (
-	invalidParamsDeadline = errors.New("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
-)
-
 /*
  * Features to add
  *
@@ -32,34 +28,46 @@ var (
  *          but change the command to 'view by project'
  */
 
+const (
+	// Quit is the text command used to quit the task manager.
+	TaskNotFoundErr        = Error("Task not found")
+	Quit            string = "quit"
+	prompt          string = "> "
+	HelpMessage            = `Commands:
+show
+add project <project name>
+add task <project name> <task description>
+check <task ID>
+uncheck <task ID>`
+)
+
+var (
+	invalidParamsDeadline = errors.New("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
+)
+
 type Error string
 
 func (e Error) Error() string {
 	return string(e)
 }
 
-const (
-	// Quit is the text command used to quit the task manager.
-	TaskNotFoundErr        = Error("Task not found")
-	Quit            string = "quit"
-	prompt          string = "> "
-)
+type projectName string
 
 // TaskList is a set of tasks, grouped by project.
 type TaskList struct {
-	in  io.Reader
-	out io.Writer
+	r io.Reader
+	w io.Writer
 
-	projectTasks map[string][]*Task
+	projectTasks map[projectName][]*Task
 	lastID       int64
 }
 
 // NewTaskList initializes a TaskList on the given I/O descriptors.
-func NewTaskList(in io.Reader, out io.Writer) *TaskList {
+func NewTaskList(r io.Reader, w io.Writer) *TaskList {
 	return &TaskList{
-		in:           in,
-		out:          out,
-		projectTasks: make(map[string][]*Task),
+		r:            r,
+		w:            w,
+		projectTasks: make(map[projectName][]*Task),
 		lastID:       0,
 	}
 }
@@ -67,9 +75,9 @@ func NewTaskList(in io.Reader, out io.Writer) *TaskList {
 // Run runs the command loop of the task manager.
 // Sequentially executes any given command, until the user types the Quit message.
 func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
-	scanner := bufio.NewScanner(l.in)
+	scanner := bufio.NewScanner(l.r)
 
-	fmt.Fprint(l.out, prompt)
+	fmt.Fprint(l.w, prompt)
 	for scanner.Scan() {
 		cmdLine := scanner.Text()
 		if cmdLine == Quit {
@@ -82,14 +90,14 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 			errorsChan <- err
 			log.Printf("program exited, %v", err)
 		}
-		fmt.Fprint(l.out, prompt)
+		fmt.Fprint(l.w, prompt)
 	}
 }
 
 func (l *TaskList) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
-	command := args[0]
-	switch command {
+
+	switch command := args[0]; command {
 	case "show":
 		l.show()
 	case "add":
@@ -117,88 +125,99 @@ func (l *TaskList) execute(cmdLine string) error {
 }
 
 func (l *TaskList) help() {
-	fmt.Fprintln(l.out, `Commands:
-  show
-  add project <project name>
-  add task <project name> <task description>
-  check <task ID>
-  uncheck <task ID>
-  `)
+	fmt.Fprintln(l.w, HelpMessage)
 }
 
 func (l *TaskList) error(command string) {
-	fmt.Fprintf(l.out, "Unknown command \"%s\".\n", command)
+	fmt.Fprintf(l.w, "Unknown command \"%s\".\n", command)
 }
 
 func (l *TaskList) today() {
-	// sort projects (to make output deterministic)
-	sortedProjects := make([]string, 0, len(l.projectTasks))
-	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, project)
-	}
-	sort.Sort(sort.StringSlice(sortedProjects))
+	sortedProjects := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
-	for _, project := range sortedProjects {
-		tasks := l.projectTasks[project]
-		fmt.Fprintf(l.out, "%s\n", project)
+	for _, projectNameStr := range sortedProjects {
+		pName := projectName(projectNameStr)
+		tasks := l.projectTasks[pName]
+
+		fmt.Fprintf(l.w, "%s\n", projectNameStr)
 		for _, task := range tasks {
 			if task.IsPreviousToCurrentDate() {
 				done := ' '
 				if task.IsDone() {
 					done = 'X'
 				}
-				fmt.Fprintf(l.out, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
+				fmt.Fprintf(l.w, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
 			}
 		}
-		fmt.Fprintln(l.out)
+		fmt.Fprintln(l.w)
 	}
 }
 
 func (l *TaskList) show() {
-	// sort projects (to make output deterministic)
-	sortedProjects := make([]string, 0, len(l.projectTasks))
-	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, project)
-	}
-	sort.Sort(sort.StringSlice(sortedProjects))
+	sortedProjectNames := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
-	for _, project := range sortedProjects {
-		tasks := l.projectTasks[project]
-		fmt.Fprintf(l.out, "%s\n", project)
+	for _, project := range sortedProjectNames {
+		pName := projectName(project)
+		tasks := l.projectTasks[pName]
+
+		fmt.Fprintf(l.w, "%s\n", project)
 		for _, task := range tasks {
 			done := ' '
 			if task.IsDone() {
 				done = 'X'
 			}
-			fmt.Fprintf(l.out, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
+			fmt.Fprintf(l.w, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
 		}
-		fmt.Fprintln(l.out)
+		fmt.Fprintln(l.w)
 	}
+}
+
+// getSortedProjectNames returns all project names sorted, given a map m
+// of (key)projectName and (values) slice of tasks
+func getSortedProjectNames(projectTasks map[projectName][]*Task) []string {
+	projectNames := convertMapOfProjectNamesToSliceOfProjectNames(projectTasks)
+	sort.Sort(sort.StringSlice(projectNames))
+
+	return projectNames
+}
+
+func convertMapOfProjectNamesToSliceOfProjectNames(projectTasks map[projectName][]*Task) []string {
+	projectNames := make([]string, 0, len(projectTasks))
+	for projectName := range projectTasks {
+		projectNames = append(projectNames, string(projectName))
+	}
+	return projectNames
 }
 
 func (l *TaskList) add(args []string) {
 	projectName := args[1]
 	if args[0] == "project" {
 		l.addProject(projectName)
-	} else if args[0] == "task" {
+		return
+	}
+	if args[0] == "task" {
 		description := strings.Join(args[2:], " ")
-		l.addTask(projectName, description)
+		l.addTaskToProject(projectName, description)
+		return
 	}
 }
 
 func (l *TaskList) addProject(name string) {
-	l.projectTasks[name] = make([]*Task, 0)
+	pName := projectName(name)
+	l.projectTasks[pName] = make([]*Task, 0)
 }
 
-func (l *TaskList) addTask(projectName, description string) {
-	tasks, ok := l.projectTasks[projectName]
+func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
+	pName := projectName(projectNameStr)
+	tasks, ok := l.projectTasks[pName]
+
 	if !ok {
-		fmt.Fprintf(l.out, "Could not find a project with the name \"%s\".\n", projectName)
+		fmt.Fprintf(l.w, "Could not find a project with the name \"%s\".\n", projectNameStr)
 		return
 	}
-	l.projectTasks[projectName] = append(tasks, NewTask(l.nextID(), description, false))
+	l.projectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
 }
 
 func (l *TaskList) check(idString string) {
@@ -220,7 +239,7 @@ func (l *TaskList) setDone(idString string, done bool) {
 func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 	id, err := NewIdentifier(idString)
 	if err != nil {
-		fmt.Fprintf(l.out, "Invalid ID \"%s\".\n", idString)
+		fmt.Fprintf(l.w, "Invalid ID \"%s\".\n", idString)
 		return nil, err
 	}
 
@@ -232,7 +251,7 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 		}
 	}
 
-	fmt.Fprintf(l.out, "Task with ID \"%d\" not found.\n", id)
+	fmt.Fprintf(l.w, "Task with ID \"%d\" not found.\n", id)
 	return nil, TaskNotFoundErr
 }
 

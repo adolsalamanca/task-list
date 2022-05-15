@@ -24,10 +24,7 @@ func (d *deadline) String() string {
 }
 
 func (d *deadline) IsEmpty() bool {
-	if d.value == 0 {
-		return true
-	}
-	return false
+	return d.value == 0
 }
 
 type identifier int64

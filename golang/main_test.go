@@ -46,11 +46,14 @@ func TestTaskList_executeWithErrors(t *testing.T) {
 	type args struct {
 		cmdCommands []string
 	}
-	tests := []struct {
+
+	type testData struct {
 		name    string
 		args    args
 		wantErr bool
-	}{
+	}
+
+	tests := []testData{
 		{
 			name: "test deadline without more parameters returns an error",
 			args: args{
@@ -113,11 +116,13 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 	type args struct {
 		cmdCommands []string
 	}
-	tests := []struct {
+
+	type testData struct {
 		name      string
 		args      args
 		readLines []string
-	}{
+	}
+	tests := []testData{
 		{
 			name: "after executing run, check and show commands, list of both checked and pending tasks is returned",
 			args: args{
@@ -234,7 +239,7 @@ func (t *scenarioTester) readLines(lines []string) {
 		}
 	}
 	if err := t.outScanner.Err(); err != nil {
-		t.Fatalf("Could not read input: %v", err)
+		t.Errorf("Could not read input: %v", err)
 	}
 }
 
@@ -248,6 +253,6 @@ func (t *scenarioTester) discardLines(n int) {
 		}
 	}
 	if err := t.outScanner.Err(); err != nil {
-		t.Fatalf("Could not read input: %v", err)
+		t.Errorf("Could not read input: %v", err)
 	}
 }
