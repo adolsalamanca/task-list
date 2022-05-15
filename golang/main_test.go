@@ -29,8 +29,6 @@ type TaskListRunParams struct {
 	shutdownChan chan bool
 }
 
-/*
-// TODO: Make use of this func instead of repeat in all tests
 func NewTaskListRunParams() TaskListRunParams {
 	inPR, inPW := io.Pipe()
 	outPR, outPW := io.Pipe()
@@ -40,32 +38,92 @@ func NewTaskListRunParams() TaskListRunParams {
 		inPW:         inPW,
 		outPW:        outPW,
 		outPR:        outPR,
-		errorsChan:   nil,
-		shutdownChan: nil,
+		errorsChan:   make(chan error),
+		shutdownChan: make(chan bool),
 	}
-}*/
+}
+
+func TestTaskList_executeWithErrors(t *testing.T) {
+	type args struct {
+		cmdCommands []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test deadline without more parameters returns an error",
+			args: args{
+				cmdCommands: []string{"deadline"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "test add without more parameters returns an error",
+			args: args{
+				cmdCommands: []string{"add"},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runParams := NewTaskListRunParams()
+			defer runParams.inPR.Close()
+			defer runParams.outPR.Close()
+			defer close(runParams.shutdownChan)
+			defer close(runParams.errorsChan)
+
+			tester := &scenarioTester{
+				T:          t,
+				inWriter:   runParams.inPW,
+				outReader:  runParams.outPR,
+				outScanner: bufio.NewScanner(runParams.outPR),
+			}
+			initTaskListAndRun(runParams.wg, runParams.inPR, runParams.outPW, runParams.errorsChan, runParams.shutdownChan)
+
+			for _, command := range tt.args.cmdCommands {
+				log.Println(tt.name)
+				tester.execute(command)
+			}
+
+			runParams.inPW.Close()
+			runParams.wg.Wait()
+
+			var err error
+			select {
+			case err = <-runParams.errorsChan:
+				log.Printf("program failed, %s", err)
+			case <-runParams.shutdownChan:
+				log.Println("finished")
+			}
+
+			if tt.wantErr && err == nil {
+				t.Fail()
+			}
+
+			if !tt.wantErr && err != nil {
+				t.Fail()
+			}
+		})
+	}
+}
 
 func TestRunToday(t *testing.T) {
+	runParams := NewTaskListRunParams()
 
 	log.SetOutput(io.Discard)
-	// setup input/output
-	log.SetOutput(io.Discard)
-	inPR, inPW := io.Pipe()
-	defer inPR.Close()
-	outPR, outPW := io.Pipe()
-	defer outPR.Close()
+	defer runParams.inPR.Close()
+	defer runParams.outPR.Close()
 	tester := &scenarioTester{
 		T:          t,
-		inWriter:   inPW,
-		outReader:  outPR,
-		outScanner: bufio.NewScanner(outPR),
+		inWriter:   runParams.inPW,
+		outReader:  runParams.outPR,
+		outScanner: bufio.NewScanner(runParams.outPR),
 	}
 
-	// run main program
-	var wg sync.WaitGroup
-	shutdownChan := make(chan bool)
-	errorsChan := make(chan error)
-	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
+	initTaskListAndRun(runParams.wg, runParams.inPR, runParams.outPW, runParams.errorsChan, runParams.shutdownChan)
 
 	// run command-line scenario
 	log.Println("(show empty)")
@@ -96,14 +154,14 @@ func TestRunToday(t *testing.T) {
 	tester.execute("quit")
 
 	// make sure main program has quit
-	inPW.Close()
-	wg.Wait()
+	runParams.inPW.Close()
+	runParams.wg.Wait()
 
 	var err error
 	select {
-	case err = <-errorsChan:
+	case err = <-runParams.errorsChan:
 		log.Printf("program failed, %s", err)
-	case <-shutdownChan:
+	case <-runParams.shutdownChan:
 		log.Println("finished")
 	}
 
@@ -170,85 +228,6 @@ func TestRunWithDeadline(t *testing.T) {
 	}
 
 	if err != nil {
-		t.Fail()
-	}
-}
-
-func TestRunDeadlineWithoutParamsDoesNotPanic(t *testing.T) {
-	// setup input/output
-	log.SetOutput(io.Discard)
-	inPR, inPW := io.Pipe()
-	defer inPR.Close()
-	outPR, outPW := io.Pipe()
-	defer outPR.Close()
-	tester := &scenarioTester{
-		T:          t,
-		inWriter:   inPW,
-		outReader:  outPR,
-		outScanner: bufio.NewScanner(outPR),
-	}
-
-	// run main program
-	var wg sync.WaitGroup
-	shutdownChan := make(chan bool)
-	errorsChan := make(chan error)
-	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
-
-	log.Println("(deadline without params)")
-	tester.execute("deadline")
-
-	// make sure main program has quit
-	inPW.Close()
-	wg.Wait()
-
-	var err error
-	select {
-	case err = <-errorsChan:
-		log.Printf("program failed, %s", err)
-	case <-shutdownChan:
-		log.Println("finished")
-	}
-
-	if err == nil {
-		t.Fail()
-	}
-}
-
-func TestAddWithoutParamsDoesNotPanic(t *testing.T) {
-	// setup input/output
-	log.SetOutput(io.Discard)
-	inPR, inPW := io.Pipe()
-	defer inPR.Close()
-	outPR, outPW := io.Pipe()
-	defer outPR.Close()
-	tester := &scenarioTester{
-		T:          t,
-		inWriter:   inPW,
-		outReader:  outPR,
-		outScanner: bufio.NewScanner(outPR),
-	}
-
-	// run main program
-	var wg sync.WaitGroup
-	shutdownChan := make(chan bool)
-	errorsChan := make(chan error)
-	initTaskListAndRun(wg, inPR, outPW, errorsChan, shutdownChan)
-	log.Println("(deadline without params)")
-	tester.execute("add")
-
-	// TODO: If quit is sent after this, the program just waits. Why?
-	inPW.Close()
-	wg.Wait()
-
-	var err error
-	select {
-	case err = <-errorsChan:
-		log.Printf("program failed, %s", err)
-	case <-shutdownChan:
-		log.Println("finished")
-	}
-
-	if err == nil {
 		t.Fail()
 	}
 }
