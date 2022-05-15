@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-var (
-	invalidParamsDeadline = errors.New("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
-)
-
 /*
  * Features to add
  *
@@ -32,18 +28,28 @@ var (
  *          but change the command to 'view by project'
  */
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
 const (
 	// Quit is the text command used to quit the task manager.
 	TaskNotFoundErr        = Error("Task not found")
 	Quit            string = "quit"
 	prompt          string = "> "
+	HelpMessage            = `Commands:
+show
+add project <project name>
+add task <project name> <task description>
+check <task ID>
+uncheck <task ID>`
 )
+
+var (
+	invalidParamsDeadline = errors.New("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
+)
+
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
 
 type projectName string
 
@@ -119,13 +125,7 @@ func (l *TaskList) execute(cmdLine string) error {
 }
 
 func (l *TaskList) help() {
-	fmt.Fprintln(l.out, `Commands:
-  show
-  add project <project name>
-  add task <project name> <task description>
-  check <task ID>
-  uncheck <task ID>
-  `)
+	fmt.Fprintln(l.out, HelpMessage)
 }
 
 func (l *TaskList) error(command string) {
