@@ -90,9 +90,8 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 
 func (l *TaskList) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
-	command := args[0]
 
-	switch command {
+	switch command := args[0]; command {
 	case "show":
 		l.show()
 	case "add":
