@@ -182,9 +182,12 @@ func (l *TaskList) add(args []string) {
 	projectName := args[1]
 	if args[0] == "project" {
 		l.addProject(projectName)
-	} else if args[0] == "task" {
+		return
+	}
+	if args[0] == "task" {
 		description := strings.Join(args[2:], " ")
 		l.addTask(projectName, description)
+		return
 	}
 }
 
