@@ -133,17 +133,14 @@ func (l *TaskList) error(command string) {
 }
 
 func (l *TaskList) today() {
-	// sort projects (to make output deterministic)
-	sortedProjects := make([]string, 0, len(l.projectTasks))
-	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, string(project))
-	}
-	sort.Sort(sort.StringSlice(sortedProjects))
+	sortedProjects := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
-	for _, project := range sortedProjects {
-		tasks := l.projectTasks[projectName(project)]
-		fmt.Fprintf(l.out, "%s\n", project)
+	for _, projectNameStr := range sortedProjects {
+		pName := projectName(projectNameStr)
+		tasks := l.projectTasks[pName]
+
+		fmt.Fprintf(l.out, "%s\n", projectNameStr)
 		for _, task := range tasks {
 			if task.IsPreviousToCurrentDate() {
 				done := ' '
@@ -158,16 +155,13 @@ func (l *TaskList) today() {
 }
 
 func (l *TaskList) show() {
-	// sort projects (to make output deterministic)
-	sortedProjects := make([]string, 0, len(l.projectTasks))
-	for project := range l.projectTasks {
-		sortedProjects = append(sortedProjects, string(project))
-	}
-	sort.Sort(sort.StringSlice(sortedProjects))
+	sortedProjectNames := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
-	for _, project := range sortedProjects {
-		tasks := l.projectTasks[projectName(project)]
+	for _, project := range sortedProjectNames {
+		pName := projectName(project)
+		tasks := l.projectTasks[pName]
+
 		fmt.Fprintf(l.out, "%s\n", project)
 		for _, task := range tasks {
 			done := ' '
@@ -178,6 +172,24 @@ func (l *TaskList) show() {
 		}
 		fmt.Fprintln(l.out)
 	}
+}
+
+// getSortedProjectNames returns the projects sorted, given a map m
+// where key of m is a project name and m[key] returns a slice of pointers to tasks
+// i,e: returns the tasks of that project.
+func getSortedProjectNames(projectTasks map[projectName][]*Task) []string {
+	projectNames := convertMapOfProjectNamesToSliceOfProjectNames(projectTasks)
+	sort.Sort(sort.StringSlice(projectNames))
+
+	return projectNames
+}
+
+func convertMapOfProjectNamesToSliceOfProjectNames(projectTasks map[projectName][]*Task) []string {
+	projectNames := make([]string, 0, len(projectTasks))
+	for projectName := range projectTasks {
+		projectNames = append(projectNames, string(projectName))
+	}
+	return projectNames
 }
 
 func (l *TaskList) add(args []string) {
@@ -194,16 +206,19 @@ func (l *TaskList) add(args []string) {
 }
 
 func (l *TaskList) addProject(name string) {
-	l.projectTasks[projectName(name)] = make([]*Task, 0)
+	pName := projectName(name)
+	l.projectTasks[pName] = make([]*Task, 0)
 }
 
 func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
-	tasks, ok := l.projectTasks[projectName(projectNameStr)]
+	pName := projectName(projectNameStr)
+	tasks, ok := l.projectTasks[pName]
+
 	if !ok {
 		fmt.Fprintf(l.out, "Could not find a project with the name \"%s\".\n", projectNameStr)
 		return
 	}
-	l.projectTasks[projectName(projectNameStr)] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
+	l.projectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
 }
 
 func (l *TaskList) check(idString string) {
