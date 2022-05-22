@@ -106,6 +106,9 @@ func (l *TaskList) execute(cmdLine string) error {
 		}
 		l.add(args[1:])
 	case "check":
+		if len(args) < 2 {
+			return fmt.Errorf("could not execute check, it requires at least 2 parameters")
+		}
 		l.check(args[1])
 	case "uncheck":
 		l.uncheck(args[1])
