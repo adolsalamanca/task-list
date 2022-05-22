@@ -69,6 +69,13 @@ func TestTaskList_executeWithErrors(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "test add without two parameters returns an error",
+			args: args{
+				cmdCommands: []string{"add foo"},
+			},
+			wantErr: true,
+		},
+		{
 			name: "test check without more parameters returns an error",
 			args: args{
 				cmdCommands: []string{"check"},
@@ -110,9 +117,7 @@ func TestTaskList_executeWithErrors(t *testing.T) {
 			var err error
 			select {
 			case err = <-runParams.errorsChan:
-				log.Printf("program failed, %s", err)
 			case <-runParams.shutdownChan:
-				log.Println("finished")
 			}
 
 			if tt.wantErr && err == nil {

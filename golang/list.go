@@ -101,7 +101,7 @@ func (l *TaskList) execute(cmdLine string) error {
 	case "show":
 		l.show()
 	case "add":
-		if len(args) < 2 {
+		if len(args) < 3 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s project <project name>\n add task <project name> <task description>", command, command)
 		}
 		l.add(args[1:])
