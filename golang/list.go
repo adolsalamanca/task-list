@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -58,17 +59,17 @@ type TaskList struct {
 	r io.Reader
 	w io.Writer
 
-	projectTasks map[projectName][]*Task
-	lastID       int64
+	allProjectTasks map[projectName][]*Task
+	lastID          int64
 }
 
 // NewTaskList initializes a TaskList on the given I/O descriptors.
 func NewTaskList(r io.Reader, w io.Writer) *TaskList {
 	return &TaskList{
-		r:            r,
-		w:            w,
-		projectTasks: make(map[projectName][]*Task),
-		lastID:       0,
+		r:               r,
+		w:               w,
+		allProjectTasks: make(map[projectName][]*Task),
+		lastID:          0,
 	}
 }
 
@@ -104,11 +105,13 @@ func (l *TaskList) execute(cmdLine string) error {
 		if len(args) < 3 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s project <project name>\n add task <project name> <task description>", command, command)
 		}
+
 		l.add(args[1:])
 	case "check":
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> ", command, command)
 		}
+
 		l.check(args[1])
 	case "uncheck":
 		l.uncheck(args[1])
@@ -118,6 +121,7 @@ func (l *TaskList) execute(cmdLine string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> <dateAsString>", command, command)
 		}
+
 		l.deadline(args[1], args[2])
 	case "today":
 		l.today()
@@ -125,7 +129,14 @@ func (l *TaskList) execute(cmdLine string) error {
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId>", command, command)
 		}
-		l.delete()
+
+		id, err := strconv.Atoi(args[1])
+		if err != nil {
+			return fmt.Errorf("could not convert identifier to int, %s", err)
+		}
+
+		l.delete(identifier(id))
+
 	default:
 		l.error(command)
 	}
@@ -141,12 +152,12 @@ func (l *TaskList) error(command string) {
 }
 
 func (l *TaskList) today() {
-	sortedProjects := getSortedProjectNames(l.projectTasks)
+	sortedProjects := getSortedProjectNames(l.allProjectTasks)
 
 	// show projects sequentially
 	for _, projectNameStr := range sortedProjects {
 		pName := projectName(projectNameStr)
-		tasks := l.projectTasks[pName]
+		tasks := l.allProjectTasks[pName]
 
 		fmt.Fprintf(l.w, "%s\n", projectNameStr)
 		for _, task := range tasks {
@@ -163,12 +174,12 @@ func (l *TaskList) today() {
 }
 
 func (l *TaskList) show() {
-	sortedProjectNames := getSortedProjectNames(l.projectTasks)
+	sortedProjectNames := getSortedProjectNames(l.allProjectTasks)
 
 	// show projects sequentially
 	for _, project := range sortedProjectNames {
 		pName := projectName(project)
-		tasks := l.projectTasks[pName]
+		tasks := l.allProjectTasks[pName]
 
 		fmt.Fprintf(l.w, "%s\n", project)
 		for _, task := range tasks {
@@ -214,18 +225,18 @@ func (l *TaskList) add(args []string) {
 
 func (l *TaskList) addProject(name string) {
 	pName := projectName(name)
-	l.projectTasks[pName] = make([]*Task, 0)
+	l.allProjectTasks[pName] = make([]*Task, 0)
 }
 
 func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
 	pName := projectName(projectNameStr)
-	tasks, ok := l.projectTasks[pName]
+	tasks, ok := l.allProjectTasks[pName]
 
 	if !ok {
 		fmt.Fprintf(l.w, "Could not find a project with the name \"%s\".\n", projectNameStr)
 		return
 	}
-	l.projectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
+	l.allProjectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
 }
 
 func (l *TaskList) check(idString string) {
@@ -251,7 +262,7 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 		return nil, err
 	}
 
-	for _, tasks := range l.projectTasks {
+	for _, tasks := range l.allProjectTasks {
 		for _, task := range tasks {
 			if task.GetID() == id {
 				return task, nil
@@ -282,6 +293,27 @@ func (l *TaskList) deadline(id string, deadlineString string) {
 	task.deadline = deadline
 }
 
-func (l *TaskList) delete() {
+func (l *TaskList) delete(id identifier) {
 
+	for projectName, tasks := range l.allProjectTasks {
+		removedIndex := -1
+		for index, task := range tasks {
+			if task.id == id {
+				removedIndex = index
+				break
+			}
+		}
+
+		if removedIndex != -1 {
+			tasks := l.allProjectTasks[projectName]
+			leftHalf := tasks[:removedIndex]
+			rightHalf := tasks[removedIndex+1:]
+
+			tasks = append(tasks, leftHalf...)
+			tasks = append(tasks, rightHalf...)
+
+			l.allProjectTasks[projectName] = tasks
+			removedIndex = -1
+		}
+	}
 }

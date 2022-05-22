@@ -174,6 +174,17 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 				"",
 			},
 		},
+		{
+			name: "after executing run, add and delete, show commands will not show removed task from list of pending",
+			args: args{
+				cmdCommands: []string{"add project secrets", "add task secrets Eat more donuts.", "add task secrets Destroy all humans.", "delete 1", "show"},
+			},
+			readLines: []string{
+				"secrets",
+				"    [ ] 2: Destroy all humans.",
+				"",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
