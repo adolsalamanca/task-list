@@ -18,8 +18,7 @@ func main() {
 	}()
 
 	select {
-	case err := <-errorsChan:
-		log.Println(err)
+	case <-errorsChan:
 		os.Exit(1)
 	case <-shutdownChan:
 		log.Println("finished")

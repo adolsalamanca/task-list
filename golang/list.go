@@ -87,8 +87,8 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 
 		err := l.execute(cmdLine)
 		if err != nil {
-			errorsChan <- err
 			log.Printf("program exited, %v", err)
+			errorsChan <- err
 		}
 		fmt.Fprint(l.w, prompt)
 	}
@@ -102,12 +102,12 @@ func (l *TaskList) execute(cmdLine string) error {
 		l.show()
 	case "add":
 		if len(args) < 2 {
-			return fmt.Errorf("could not execute add, it requires at least 2 parameters")
+			return fmt.Errorf("could not execute %s.\n Usage: %s project <project name>\n add task <project name> <task description>", command, command)
 		}
 		l.add(args[1:])
 	case "check":
 		if len(args) < 2 {
-			return fmt.Errorf("could not execute check, it requires at least 2 parameters")
+			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> ", command, command)
 		}
 		l.check(args[1])
 	case "uncheck":
@@ -116,7 +116,7 @@ func (l *TaskList) execute(cmdLine string) error {
 		l.help()
 	case "deadline":
 		if len(args) < 2 {
-			return fmt.Errorf("could not execute deadline. Usage: deadline <taskId> <dateAsString>")
+			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> <dateAsString>", command, command)
 		}
 		l.deadline(args[1], args[2])
 	case "today":
