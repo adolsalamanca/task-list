@@ -75,6 +75,13 @@ func TestTaskList_executeWithErrors(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "test delete without more parameters returns an error",
+			args: args{
+				cmdCommands: []string{"delete"},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

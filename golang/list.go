@@ -121,6 +121,11 @@ func (l *TaskList) execute(cmdLine string) error {
 		l.deadline(args[1], args[2])
 	case "today":
 		l.today()
+	case "delete":
+		if len(args) < 2 {
+			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId>", command, command)
+		}
+		l.delete()
 	default:
 		l.error(command)
 	}
@@ -275,4 +280,8 @@ func (l *TaskList) deadline(id string, deadlineString string) {
 	}
 
 	task.deadline = deadline
+}
+
+func (l *TaskList) delete() {
+
 }
