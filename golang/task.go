@@ -9,8 +9,7 @@ import (
 var timeFormat = time.DateOnly
 
 type deadline struct {
-	date         string
-	deadLineDate time.Time
+	date time.Time
 }
 
 func NewDeadline(deadlineString string) (deadline, error) {
@@ -20,16 +19,16 @@ func NewDeadline(deadlineString string) (deadline, error) {
 	}
 
 	return deadline{
-		deadLineDate: date,
+		date: date,
 	}, nil
 }
 
 func (d *deadline) String() string {
-	return fmt.Sprintf(" (%s)", d.deadLineDate.Format(timeFormat))
+	return fmt.Sprintf(" (%s)", d.date.Format(timeFormat))
 }
 
 func (d *deadline) IsEmpty() bool {
-	return d.deadLineDate.IsZero()
+	return d.date.IsZero()
 }
 
 type identifier int64
@@ -92,12 +91,13 @@ func (t *Task) GetDeadline() string {
 }
 
 func (t *Task) IsPreviousToCurrentDate() bool {
-	return t.IsPreviousTo(time.Now().Year(), int(time.Now().Month()), time.Now().Day())
+	return t.IsDue(time.Now())
 }
 
-func (t *Task) IsPreviousTo(year, month, day int) bool {
-	if t.deadline.date <= fmt.Sprintf("%04d%02d%02d\n", year, month, day) {
-		return true
+func (t *Task) IsDue(d time.Time) bool {
+	if t.deadline.date.After(d) {
+		return false
 	}
-	return false
+
+	return true
 }

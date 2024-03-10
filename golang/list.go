@@ -14,7 +14,7 @@ import (
  * Features to add
  *
  * 1. Deadlines
- *    (i)   Give each task an optional deadline with the 'deadline <ID> <date>' command.
+ *    (i)   Give each task an optional deadline with the 'deadline <ID> <dateString>' command.
  *    (ii)  Show all tasks due today with the 'today' command.
  * 2. Customisable IDs
  *    (i)   Allow the user to specify an identifier that's not a number.
@@ -22,7 +22,7 @@ import (
  * 3. Deletion
  *    (i)   Allow users to delete tasks with the 'delete <ID>' command.
  * 4. Views
- *    (i)   View tasks by date with the 'view by date' command.
+ *    (i)   View tasks by dateString with the 'view by dateString' command.
  *    (ii)  View tasks by deadline with the 'view by deadline' command.
  *    (iii) Don't remove the functionality that allows users to view tasks by project,
  *          but change the command to 'view by project'
