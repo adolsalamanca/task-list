@@ -68,8 +68,7 @@ func TestTask_IsPreviousTo(t1 *testing.T) {
 				description: "",
 				taskDone:    false,
 				deadline: deadline{
-					value: 0,
-					date:  "20211129",
+					date: "20211129",
 				},
 			},
 			date: date{
@@ -86,8 +85,7 @@ func TestTask_IsPreviousTo(t1 *testing.T) {
 				description: "",
 				taskDone:    false,
 				deadline: deadline{
-					value: 0,
-					date:  "20500101",
+					date: "20500101",
 				},
 			},
 			date: date{

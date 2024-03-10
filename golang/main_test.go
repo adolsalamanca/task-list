@@ -165,12 +165,12 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 		{
 			name: "after executing run, deadline and show commands, list of pending tasks with deadlines is returned",
 			args: args{
-				cmdCommands: []string{"add project secrets", "add task secrets Eat more donuts.", "add task secrets Destroy all humans.", "deadline 1 20200721", "deadline 2 20200730", "show"},
+				cmdCommands: []string{"add project secrets", "add task secrets Eat more donuts.", "add task secrets Destroy all humans.", "deadline 1 2020-07-21", "deadline 2 2020-07-30", "show"},
 			},
 			readLines: []string{
 				"secrets",
-				"    [ ] 1: (20200721) Eat more donuts.",
-				"    [ ] 2: (20200730) Destroy all humans.",
+				"    [ ] 1: (2020-07-21) Eat more donuts.",
+				"    [ ] 2: (2020-07-30) Destroy all humans.",
 				"",
 			},
 		},

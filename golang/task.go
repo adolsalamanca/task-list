@@ -6,25 +6,30 @@ import (
 	"time"
 )
 
+var timeFormat = time.DateOnly
+
 type deadline struct {
-	value int64
-	date  string
+	date         string
+	deadLineDate time.Time
 }
 
 func NewDeadline(deadlineString string) (deadline, error) {
-	value, err := strconv.ParseInt(deadlineString, 10, 64)
+	date, err := time.Parse(timeFormat, deadlineString)
+	if err != nil {
+		return deadline{}, err
+	}
+
 	return deadline{
-		value: value,
-		date:  deadlineString,
-	}, err
+		deadLineDate: date,
+	}, nil
 }
 
 func (d *deadline) String() string {
-	return fmt.Sprintf(" (%v)", d.value)
+	return fmt.Sprintf(" (%s)", d.deadLineDate.Format(timeFormat))
 }
 
 func (d *deadline) IsEmpty() bool {
-	return d.value == 0
+	return d.deadLineDate.IsZero()
 }
 
 type identifier int64
