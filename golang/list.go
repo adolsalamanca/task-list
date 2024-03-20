@@ -30,15 +30,17 @@ import (
 
 const (
 	// Quit is the text command used to quit the task manager.
-	TaskNotFoundErr        = Error("Task not found")
-	Quit            string = "quit"
+	taskNotFoundErr        = Error("Task not found")
+	quit            string = "quit"
 	prompt          string = "> "
-	HelpMessage            = `Commands:
+	helpMessage            = `Commands:
 show
 add project <project name>
 add task <project name> <task description>
 check <task ID>
 uncheck <task ID>
+deadline <task ID> <date>
+today
 quit`
 
 	showCommand     = "show"
@@ -90,7 +92,7 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 	fmt.Fprint(l.w, prompt)
 	for scanner.Scan() {
 		cmdLine := scanner.Text()
-		if cmdLine == Quit {
+		if cmdLine == quit {
 			shutdownChan <- true
 			return
 		}
@@ -143,7 +145,7 @@ func (l *TaskList) execute(cmdLine string) error {
 }
 
 func (l *TaskList) help() {
-	fmt.Fprintln(l.w, HelpMessage)
+	fmt.Fprintln(l.w, helpMessage)
 }
 
 func (l *TaskList) error(command string) {
@@ -155,17 +157,13 @@ func (l *TaskList) today() {
 
 	// show projects sequentially
 	for _, projectNameStr := range sortedProjects {
-		pName := projectName(projectNameStr)
-		tasks := l.projectTasks[pName]
+		projectName := projectName(projectNameStr)
+		tasksOfProject := l.projectTasks[projectName]
 
 		fmt.Fprintf(l.w, "%s\n", projectNameStr)
-		for _, task := range tasks {
+		for _, task := range tasksOfProject {
 			if task.IsPreviousToCurrentDate() {
-				done := ' '
-				if task.IsDone() {
-					done = 'X'
-				}
-				fmt.Fprintf(l.w, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
+				task.write(l.w)
 			}
 		}
 		fmt.Fprintln(l.w)
@@ -182,11 +180,7 @@ func (l *TaskList) show() {
 
 		fmt.Fprintf(l.w, "%s\n", project)
 		for _, task := range tasks {
-			done := ' '
-			if task.IsDone() {
-				done = 'X'
-			}
-			fmt.Fprintf(l.w, "    [%c] %d:%s %s\n", done, task.GetID(), task.GetDeadline(), task.GetDescription())
+			task.write(l.w)
 		}
 		fmt.Fprintln(l.w)
 	}
@@ -270,7 +264,7 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 	}
 
 	fmt.Fprintf(l.w, "Task with ID \"%d\" not found.\n", id)
-	return nil, TaskNotFoundErr
+	return nil, taskNotFoundErr
 }
 
 func (l *TaskList) nextID() int64 {

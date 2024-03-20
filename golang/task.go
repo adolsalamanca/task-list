@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"time"
 )
 
@@ -59,4 +61,13 @@ func (t *Task) IsPreviousToCurrentDate() bool {
 
 func (t *Task) IsDue(d time.Time) bool {
 	return !t.deadline.date.After(d)
+}
+
+// write writes the task info to the given w writer.
+func (t *Task) write(w io.Writer) {
+	doneChar := ' '
+	if t.IsDone() {
+		doneChar = 'X'
+	}
+	fmt.Fprintf(w, "    [%c] %d:%s %s\n", doneChar, t.GetID(), t.GetDeadline(), t.GetDescription())
 }
