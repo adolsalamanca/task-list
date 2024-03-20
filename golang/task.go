@@ -58,9 +58,5 @@ func (t *Task) IsPreviousToCurrentDate() bool {
 }
 
 func (t *Task) IsDue(d time.Time) bool {
-	if t.deadline.date.After(d) {
-		return false
-	}
-
-	return true
+	return !t.deadline.date.After(d)
 }
