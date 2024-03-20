@@ -38,7 +38,8 @@ show
 add project <project name>
 add task <project name> <task description>
 check <task ID>
-uncheck <task ID>`
+uncheck <task ID>
+quit`
 
 	showCommand     = "show"
 	addCommand      = "add"
