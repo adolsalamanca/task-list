@@ -39,6 +39,15 @@ add project <project name>
 add task <project name> <task description>
 check <task ID>
 uncheck <task ID>`
+
+	showCommand     = "show"
+	addCommand      = "add"
+	checkCommand    = "check"
+	uncheckCommand  = "uncheck"
+	helpCommand     = "help"
+	deadlineCommand = "deadline"
+	todayCommand    = "today"
+	deleteCommand   = "delete"
 )
 
 var (
@@ -98,30 +107,30 @@ func (l *TaskList) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
 
 	switch command := args[0]; command {
-	case "show":
+	case showCommand:
 		l.show()
-	case "add":
+	case addCommand:
 		if len(args) < 3 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s project <project name>\n add task <project name> <task description>", command, command)
 		}
 		l.add(args[1:])
-	case "check":
+	case checkCommand:
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> ", command, command)
 		}
 		l.check(args[1])
-	case "uncheck":
+	case uncheckCommand:
 		l.uncheck(args[1])
-	case "help":
+	case helpCommand:
 		l.help()
-	case "deadline":
+	case deadlineCommand:
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId> <dateAsString>", command, command)
 		}
 		l.deadline(args[1], args[2])
-	case "today":
+	case todayCommand:
 		l.today()
-	case "delete":
+	case deleteCommand:
 		if len(args) < 2 {
 			return fmt.Errorf("could not execute %s.\n Usage: %s <taskId>", command, command)
 		}
