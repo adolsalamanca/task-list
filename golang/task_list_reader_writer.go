@@ -65,8 +65,8 @@ func (e Error) Error() string {
 
 type projectName string
 
-// TaskList is a set of tasks, grouped by project.
-type TaskList struct {
+// TaskListReaderWriter is a set of tasks, grouped by project.
+type TaskListReaderWriter struct {
 	r io.Reader
 	w io.Writer
 
@@ -74,9 +74,9 @@ type TaskList struct {
 	lastID       int64
 }
 
-// NewTaskList initializes a TaskList on the given I/O descriptors.
-func NewTaskList(r io.Reader, w io.Writer) *TaskList {
-	return &TaskList{
+// NewTaskListReaderWriter initializes a TaskList on the given I/O descriptors.
+func NewTaskListReaderWriter(r io.Reader, w io.Writer) *TaskListReaderWriter {
+	return &TaskListReaderWriter{
 		r:            r,
 		w:            w,
 		projectTasks: make(map[projectName][]*Task),
@@ -86,7 +86,7 @@ func NewTaskList(r io.Reader, w io.Writer) *TaskList {
 
 // Run runs the command loop of the task manager.
 // Sequentially executes any given command, until the user types the Quit message.
-func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
+func (l *TaskListReaderWriter) Run(errorsChan chan<- error, shutdownChan chan bool) {
 	scanner := bufio.NewScanner(l.r)
 
 	fmt.Fprint(l.w, prompt)
@@ -106,7 +106,7 @@ func (l *TaskList) Run(errorsChan chan<- error, shutdownChan chan bool) {
 	}
 }
 
-func (l *TaskList) execute(cmdLine string) error {
+func (l *TaskListReaderWriter) execute(cmdLine string) error {
 	args := strings.Split(cmdLine, " ")
 
 	switch command := args[0]; command {
@@ -144,15 +144,15 @@ func (l *TaskList) execute(cmdLine string) error {
 	return nil
 }
 
-func (l *TaskList) help() {
+func (l *TaskListReaderWriter) help() {
 	fmt.Fprintln(l.w, helpMessage)
 }
 
-func (l *TaskList) error(command string) {
+func (l *TaskListReaderWriter) error(command string) {
 	fmt.Fprintf(l.w, "Unknown command \"%s\".\n", command)
 }
 
-func (l *TaskList) today() {
+func (l *TaskListReaderWriter) today() {
 	sortedProjects := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
@@ -170,7 +170,7 @@ func (l *TaskList) today() {
 	}
 }
 
-func (l *TaskList) show() {
+func (l *TaskListReaderWriter) show() {
 	sortedProjectNames := getSortedProjectNames(l.projectTasks)
 
 	// show projects sequentially
@@ -203,7 +203,7 @@ func convertMapOfProjectNamesToSliceOfProjectNames(projectTasks map[projectName]
 	return projectNames
 }
 
-func (l *TaskList) add(args []string) {
+func (l *TaskListReaderWriter) add(args []string) {
 	projectName := args[1]
 	if args[0] == "project" {
 		l.addProject(projectName)
@@ -218,12 +218,12 @@ func (l *TaskList) add(args []string) {
 	fmt.Fprintf(l.w, "could not execute %s.\nUsage: %s project <project name>\nor\nadd task <project name> <task description>", command, command)
 }
 
-func (l *TaskList) addProject(name string) {
+func (l *TaskListReaderWriter) addProject(name string) {
 	pName := projectName(name)
 	l.projectTasks[pName] = make([]*Task, 0)
 }
 
-func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
+func (l *TaskListReaderWriter) addTaskToProject(projectNameStr, newTaskDescription string) {
 	pName := projectName(projectNameStr)
 	tasks, ok := l.projectTasks[pName]
 
@@ -234,15 +234,15 @@ func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) {
 	l.projectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
 }
 
-func (l *TaskList) check(idString string) {
+func (l *TaskListReaderWriter) check(idString string) {
 	l.setDone(idString, true)
 }
 
-func (l *TaskList) uncheck(idString string) {
+func (l *TaskListReaderWriter) uncheck(idString string) {
 	l.setDone(idString, false)
 }
 
-func (l *TaskList) setDone(idString string, done bool) {
+func (l *TaskListReaderWriter) setDone(idString string, done bool) {
 	task, err := l.getTaskBy(idString)
 	if err != nil {
 		return
@@ -250,7 +250,7 @@ func (l *TaskList) setDone(idString string, done bool) {
 	task.done = done
 }
 
-func (l *TaskList) getTaskBy(idString string) (*Task, error) {
+func (l *TaskListReaderWriter) getTaskBy(idString string) (*Task, error) {
 	id, err := NewIdentifier(idString)
 	if err != nil {
 		fmt.Fprintf(l.w, "Invalid ID \"%s\".\n", idString)
@@ -269,12 +269,12 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 	return nil, taskNotFoundErr
 }
 
-func (l *TaskList) nextID() int64 {
+func (l *TaskListReaderWriter) nextID() int64 {
 	l.lastID++
 	return l.lastID
 }
 
-func (l *TaskList) deadline(id string, deadlineString string) {
+func (l *TaskListReaderWriter) deadline(id string, deadlineString string) {
 	deadline, err := NewDeadline(deadlineString)
 	if err != nil {
 		return
@@ -288,6 +288,6 @@ func (l *TaskList) deadline(id string, deadlineString string) {
 	task.deadline = deadline
 }
 
-func (l *TaskList) delete() {
+func (l *TaskListReaderWriter) delete() {
 
 }

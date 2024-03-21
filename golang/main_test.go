@@ -220,7 +220,7 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter, errorsChan chan error, shutdownChan chan bool) {
 	go func() {
 		wg.Add(1)
-		NewTaskList(inPR, outPW).Run(errorsChan, shutdownChan)
+		NewTaskListReaderWriter(inPR, outPW).Run(errorsChan, shutdownChan)
 		outPW.Close()
 		wg.Done()
 	}()

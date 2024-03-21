@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	taskList := NewTaskList(os.Stdin, os.Stdout)
+	taskList := NewTaskListReaderWriter(os.Stdin, os.Stdout)
 	shutdownChan := make(chan bool)
 	errorsChan := make(chan error)
 
