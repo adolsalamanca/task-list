@@ -114,7 +114,7 @@ func (l *TaskList) execute(cmdLine string) error {
 		l.show()
 	case addCommand:
 		if len(args) < 3 {
-			return fmt.Errorf("could not execute %s.\n Usage: %s project <project name>\n add task <project name> <task description>", command, command)
+			return fmt.Errorf("could not execute %s.\nUsage: %s project <project name>\nor\nadd task <project name> <task description>", command, command)
 		}
 		l.add(args[1:])
 	case checkCommand:
@@ -214,6 +214,8 @@ func (l *TaskList) add(args []string) {
 		l.addTaskToProject(projectName, description)
 		return
 	}
+	command := "add"
+	fmt.Fprintf(l.w, "could not execute %s.\nUsage: %s project <project name>\nor\nadd task <project name> <task description>", command, command)
 }
 
 func (l *TaskList) addProject(name string) {
