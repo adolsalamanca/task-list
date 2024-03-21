@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"sort"
 	"strings"
 )
 
@@ -160,23 +159,6 @@ func (l *TaskListReaderWriter) show() {
 		}
 		fmt.Fprintln(l.w)
 	}
-}
-
-// getSortedProjectNames returns all project names sorted, given a map m
-// of (key)projectName and (values) slice of tasks
-func getSortedProjectNames(projectTasks map[projectName][]*Task) []string {
-	projectNames := convertMapOfProjectNamesToSliceOfProjectNames(projectTasks)
-	sort.Sort(sort.StringSlice(projectNames))
-
-	return projectNames
-}
-
-func convertMapOfProjectNamesToSliceOfProjectNames(projectTasks map[projectName][]*Task) []string {
-	projectNames := make([]string, 0, len(projectTasks))
-	for projectName := range projectTasks {
-		projectNames = append(projectNames, string(projectName))
-	}
-	return projectNames
 }
 
 func (l *TaskListReaderWriter) add(args []string) {
