@@ -33,15 +33,6 @@ const (
 	taskNotFoundErr        = Error("Task not found")
 	quit            string = "quit"
 	prompt          string = "> "
-	helpMessage            = `Commands:
-show
-add project <project name>
-add task <project name> <task description>
-check <task ID>
-uncheck <task ID>
-deadline <task ID> <date>
-today
-quit`
 
 	showCommand     = "show"
 	addCommand      = "add"
@@ -65,22 +56,19 @@ func (e Error) Error() string {
 
 type projectName string
 
-// TaskListReaderWriter is a set of tasks, grouped by project.
+// TaskListReaderWriter wraps a TaskList with read and write capabilities.
 type TaskListReaderWriter struct {
-	r io.Reader
-	w io.Writer
-
-	projectTasks map[projectName][]*Task
-	lastID       int64
+	r        io.Reader
+	w        io.Writer
+	taskList *TaskList
 }
 
-// NewTaskListReaderWriter initializes a TaskList on the given I/O descriptors.
+// NewTaskListReaderWriter initializes a TaskList on the given reader and writer.
 func NewTaskListReaderWriter(r io.Reader, w io.Writer) *TaskListReaderWriter {
 	return &TaskListReaderWriter{
-		r:            r,
-		w:            w,
-		projectTasks: make(map[projectName][]*Task),
-		lastID:       0,
+		r:        r,
+		w:        w,
+		taskList: NewTaskList(),
 	}
 }
 
@@ -145,41 +133,29 @@ func (l *TaskListReaderWriter) execute(cmdLine string) error {
 }
 
 func (l *TaskListReaderWriter) help() {
-	fmt.Fprintln(l.w, helpMessage)
+	fmt.Fprintln(l.w, l.taskList.help())
 }
 
 func (l *TaskListReaderWriter) error(command string) {
-	fmt.Fprintf(l.w, "Unknown command \"%s\".\n", command)
+	fmt.Fprintln(l.w, l.taskList.errorMessage(command))
 }
 
 func (l *TaskListReaderWriter) today() {
-	sortedProjects := getSortedProjectNames(l.projectTasks)
-
-	// show projects sequentially
-	for _, projectNameStr := range sortedProjects {
-		projectName := projectName(projectNameStr)
-		tasksOfProject := l.projectTasks[projectName]
-
-		fmt.Fprintf(l.w, "%s\n", projectNameStr)
-		for _, task := range tasksOfProject {
-			if task.IsPreviousToCurrentDate() {
-				task.write(l.w)
-			}
+	projectsWithTasks := l.taskList.getProjectWithTasksDueToday()
+	for _, projectWithTasks := range projectsWithTasks {
+		fmt.Fprintf(l.w, "%s\n", projectWithTasks.projectName)
+		for _, task := range projectWithTasks.tasks {
+			task.write(l.w)
 		}
 		fmt.Fprintln(l.w)
 	}
 }
 
 func (l *TaskListReaderWriter) show() {
-	sortedProjectNames := getSortedProjectNames(l.projectTasks)
-
-	// show projects sequentially
-	for _, project := range sortedProjectNames {
-		pName := projectName(project)
-		tasks := l.projectTasks[pName]
-
-		fmt.Fprintf(l.w, "%s\n", project)
-		for _, task := range tasks {
+	projectsWithTasks := l.taskList.getProjectWithTasks()
+	for _, projectWithTasks := range projectsWithTasks {
+		fmt.Fprintf(l.w, "%s\n", projectWithTasks.projectName)
+		for _, task := range projectWithTasks.tasks {
 			task.write(l.w)
 		}
 		fmt.Fprintln(l.w)
@@ -206,72 +182,33 @@ func convertMapOfProjectNamesToSliceOfProjectNames(projectTasks map[projectName]
 func (l *TaskListReaderWriter) add(args []string) {
 	projectName := args[1]
 	if args[0] == "project" {
-		l.addProject(projectName)
+		l.taskList.addProject(projectName)
 		return
 	}
 	if args[0] == "task" {
 		description := strings.Join(args[2:], " ")
-		l.addTaskToProject(projectName, description)
+		err := l.taskList.addTaskToProject(projectName, description)
+		if err != nil {
+			fmt.Fprintln(l.w, err)
+		}
 		return
 	}
 	command := "add"
 	fmt.Fprintf(l.w, "could not execute %s.\nUsage: %s project <project name>\nor\nadd task <project name> <task description>", command, command)
 }
 
-func (l *TaskListReaderWriter) addProject(name string) {
-	pName := projectName(name)
-	l.projectTasks[pName] = make([]*Task, 0)
-}
-
-func (l *TaskListReaderWriter) addTaskToProject(projectNameStr, newTaskDescription string) {
-	pName := projectName(projectNameStr)
-	tasks, ok := l.projectTasks[pName]
-
-	if !ok {
-		fmt.Fprintf(l.w, "Could not find a project with the name \"%s\".\n", projectNameStr)
-		return
-	}
-	l.projectTasks[pName] = append(tasks, NewTask(l.nextID(), newTaskDescription, false))
-}
-
 func (l *TaskListReaderWriter) check(idString string) {
-	l.setDone(idString, true)
+	err := l.taskList.check(idString)
+	if err != nil {
+		fmt.Fprintln(l.w, err)
+	}
 }
 
 func (l *TaskListReaderWriter) uncheck(idString string) {
-	l.setDone(idString, false)
-}
-
-func (l *TaskListReaderWriter) setDone(idString string, done bool) {
-	task, err := l.getTaskBy(idString)
+	err := l.taskList.uncheck(idString)
 	if err != nil {
-		return
+		fmt.Fprintln(l.w, err)
 	}
-	task.done = done
-}
-
-func (l *TaskListReaderWriter) getTaskBy(idString string) (*Task, error) {
-	id, err := NewIdentifier(idString)
-	if err != nil {
-		fmt.Fprintf(l.w, "Invalid ID \"%s\".\n", idString)
-		return nil, err
-	}
-
-	for _, tasks := range l.projectTasks {
-		for _, task := range tasks {
-			if task.GetID() == id {
-				return task, nil
-			}
-		}
-	}
-
-	fmt.Fprintf(l.w, "Task with ID \"%d\" not found.\n", id)
-	return nil, taskNotFoundErr
-}
-
-func (l *TaskListReaderWriter) nextID() int64 {
-	l.lastID++
-	return l.lastID
 }
 
 func (l *TaskListReaderWriter) deadline(id string, deadlineString string) {
@@ -280,8 +217,9 @@ func (l *TaskListReaderWriter) deadline(id string, deadlineString string) {
 		return
 	}
 
-	task, err := l.getTaskBy(id)
+	task, err := l.taskList.getTaskBy(id)
 	if err != nil {
+		fmt.Fprintln(l.w, err)
 		return
 	}
 
