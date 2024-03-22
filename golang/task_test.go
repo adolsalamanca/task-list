@@ -43,7 +43,7 @@ func TestIsPreviousToCurrentDate(t *testing.T) {
 	}
 }
 
-func TestTask_IsPreviousTo(t *testing.T) {
+func TestTask_IsDue(t *testing.T) {
 	type taskFields struct {
 		id          identifier
 		description string
