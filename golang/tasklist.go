@@ -145,18 +145,20 @@ func (l *TaskList) nextID() int64 {
 	return l.lastID
 }
 
-func (l *TaskList) deadline(id string, deadlineString string) {
+func (l *TaskList) deadline(id string, deadlineString string) error {
 	deadline, err := NewDeadline(deadlineString)
 	if err != nil {
-		return
+		return err
 	}
 
 	task, err := l.getTaskBy(id)
 	if err != nil {
-		return
+		return err
 	}
 
 	task.deadline = deadline
+
+	return nil
 }
 
 // getSortedProjectNames returns all project names sorted, given a map m

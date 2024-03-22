@@ -194,18 +194,10 @@ func (l *TaskListReaderWriter) uncheck(idString string) {
 }
 
 func (l *TaskListReaderWriter) deadline(id string, deadlineString string) {
-	deadline, err := NewDeadline(deadlineString)
-	if err != nil {
-		return
-	}
-
-	task, err := l.taskList.getTaskBy(id)
+	err := l.taskList.deadline(id, deadlineString)
 	if err != nil {
 		fmt.Fprintln(l.w, err)
-		return
 	}
-
-	task.deadline = deadline
 }
 
 func (l *TaskListReaderWriter) delete() {
