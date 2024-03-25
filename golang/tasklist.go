@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 )
 
 const (
@@ -165,7 +165,7 @@ func (l *TaskList) deadline(id string, deadlineString string) error {
 // of (key)projectName and (values) slice of tasks
 func getSortedProjectNames(projectTasks map[projectName][]*Task) []string {
 	projectNames := convertMapOfProjectNamesToSliceOfProjectNames(projectTasks)
-	sort.Sort(sort.StringSlice(projectNames))
+	slices.Sort(projectNames)
 
 	return projectNames
 }
