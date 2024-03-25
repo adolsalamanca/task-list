@@ -75,8 +75,8 @@ func (l *TaskList) getProjectWithTasksDueToday() []ProjectWithTasks {
 func (l *TaskList) getProjectWithTasks() []ProjectWithTasks {
 	var projectstWithTasks []ProjectWithTasks
 
-	sortedProjects := getSortedProjectNames(l.projectTasks)
-	for _, projectNameStr := range sortedProjects {
+	sortedProjectNames := getSortedProjectNames(l.projectTasks)
+	for _, projectNameStr := range sortedProjectNames {
 		projectName := projectName(projectNameStr)
 		projectWithTasks := ProjectWithTasks{
 			projectName: projectName,

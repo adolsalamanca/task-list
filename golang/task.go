@@ -63,7 +63,7 @@ func (t *Task) IsDue(d time.Time) bool {
 	return !t.deadline.date.After(d)
 }
 
-// write writes the task info to the
+// write writes the task info to the writer w.
 func (t *Task) write(w io.Writer) {
 	doneChar := ' '
 	if t.IsDone() {
