@@ -174,6 +174,17 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 				"",
 			},
 		},
+		{
+			name: "Custom IDs are working after inserting some Tasks to Projects",
+			args: args{
+				cmdCommands: []string{"add project secrets", "add task(12345) secrets Destroy all humans.", "show"},
+			},
+			readLines: []string{
+				"secrets",
+				"    [ ] 12345: Destroy all humans.",
+				"",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
