@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 func TestGetProjectWithTasksNoError(t *testing.T) {
-	taskList := NewTaskList()
+	idGenerator := func(id int64) string {
+		return fmt.Sprintf("%v", id+1)
+	}
+
+	taskList := NewTaskList(idGenerator)
 
 	projectName := "secrets"
 	taskList.addProject(projectName)

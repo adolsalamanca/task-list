@@ -20,12 +20,14 @@ quit`
 type TaskList struct {
 	projectTasks map[projectName][]*Task
 	lastID       int64
+	idGenerator  func(id int64) string
 }
 
-func NewTaskList() *TaskList {
+func NewTaskList(idGenerator func(id int64) string) *TaskList {
 	return &TaskList{
 		projectTasks: make(map[projectName][]*Task),
 		lastID:       0,
+		idGenerator:  idGenerator,
 	}
 }
 
@@ -101,7 +103,7 @@ func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) e
 		return fmt.Errorf("could not find a project with the name \"%s\".\n", projectNameStr)
 	}
 
-	newTask, err := NewTask(l.nextID(), newTaskDescription, false)
+	newTask, err := NewTask(l.nextTaskID(), newTaskDescription, false)
 	if err != nil {
 		return err
 	}
@@ -144,9 +146,10 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 	return nil, fmt.Errorf("task with ID \"%v\" not found.\n", id)
 }
 
-func (l *TaskList) nextID() int64 {
+func (l *TaskList) nextTaskID() string {
+	nextID := l.idGenerator(l.lastID)
 	l.lastID++
-	return l.lastID
+	return nextID
 }
 
 func (l *TaskList) deadline(id string, deadlineString string) error {

@@ -63,11 +63,11 @@ type TaskListReaderWriter struct {
 }
 
 // NewTaskListReaderWriter initializes a TaskList on the given reader and writer.
-func NewTaskListReaderWriter(r io.Reader, w io.Writer) *TaskListReaderWriter {
+func NewTaskListReaderWriter(r io.Reader, w io.Writer, idGenerator func(id int64) string) *TaskListReaderWriter {
 	return &TaskListReaderWriter{
 		r:        r,
 		w:        w,
-		taskList: NewTaskList(),
+		taskList: NewTaskList(idGenerator),
 	}
 }
 

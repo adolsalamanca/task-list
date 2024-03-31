@@ -6,10 +6,15 @@ package main
 import (
 	"log"
 	"os"
+
+	"github.com/google/uuid"
 )
 
 func main() {
-	taskList := NewTaskListReaderWriter(os.Stdin, os.Stdout)
+	idGenerator := func(_ int64) string {
+		return uuid.New().String()
+	}
+	taskList := NewTaskListReaderWriter(os.Stdin, os.Stdout, idGenerator)
 	shutdownChan := make(chan bool)
 	errorsChan := make(chan error)
 

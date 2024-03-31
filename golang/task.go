@@ -15,11 +15,7 @@ type Task struct {
 }
 
 // NewTask initializes a Task with the given ID, description and completion status.
-func NewTask(idInt int64, description string, done bool) (*Task, error) {
-	id, err := NewIdentifier(fmt.Sprintf("%v", idInt))
-	if err != nil {
-		return nil, err
-	}
+func NewTask(id string, description string, done bool) (*Task, error) {
 	return &Task{
 		id:          identifier(id),
 		description: description,

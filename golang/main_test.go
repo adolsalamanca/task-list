@@ -218,9 +218,13 @@ func TestTaskList_executeWithReadLines(t *testing.T) {
 }
 
 func initTaskListAndRun(wg sync.WaitGroup, inPR *io.PipeReader, outPW *io.PipeWriter, errorsChan chan error, shutdownChan chan bool) {
+	idGenerator := func(id int64) string {
+		return fmt.Sprintf("%v", id+1)
+	}
+
 	go func() {
 		wg.Add(1)
-		NewTaskListReaderWriter(inPR, outPW).Run(errorsChan, shutdownChan)
+		NewTaskListReaderWriter(inPR, outPW, idGenerator).Run(errorsChan, shutdownChan)
 		outPW.Close()
 		wg.Done()
 	}()
