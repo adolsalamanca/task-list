@@ -33,7 +33,7 @@ func TestGetProjectWithTasksNoError(t *testing.T) {
 			projectName: "amazing project",
 			tasks: []*Task{
 				{
-					id:          identifier(3),
+					id:          identifier("3"),
 					description: "Something really amazing",
 					done:        true,
 				},
@@ -43,12 +43,12 @@ func TestGetProjectWithTasksNoError(t *testing.T) {
 			projectName: "secrets",
 			tasks: []*Task{
 				{
-					id:          identifier(1),
+					id:          identifier("1"),
 					description: "Eat more donuts",
 					done:        true,
 				},
 				{
-					id:          identifier(2),
+					id:          identifier("2"),
 					description: "Destroy all human",
 					done:        false,
 				},
@@ -58,17 +58,17 @@ func TestGetProjectWithTasksNoError(t *testing.T) {
 			projectName: "training",
 			tasks: []*Task{
 				{
-					id:          identifier(4),
+					id:          identifier("4"),
 					description: "SOLID",
 					done:        false,
 				},
 				{
-					id:          identifier(5),
+					id:          identifier("5"),
 					description: "Four Elements of Simple Design",
 					done:        true,
 				},
 				{
-					id:          identifier(6),
+					id:          identifier("6"),
 					description: "Coupling and Cohesion",
 					done:        false,
 				},

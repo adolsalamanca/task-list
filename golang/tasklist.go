@@ -101,7 +101,11 @@ func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) e
 		return fmt.Errorf("could not find a project with the name \"%s\".\n", projectNameStr)
 	}
 
-	newTask := NewTask(l.nextID(), newTaskDescription, false)
+	newTask, err := NewTask(l.nextID(), newTaskDescription, false)
+	if err != nil {
+		return err
+	}
+
 	l.projectTasks[pName] = append(tasks, newTask)
 	return nil
 }
@@ -126,7 +130,7 @@ func (l *TaskList) setDone(idString string, done bool) error {
 func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 	id, err := NewIdentifier(idString)
 	if err != nil {
-		return nil, fmt.Errorf("invalid ID \"%s\".\n", idString)
+		return nil, err
 	}
 
 	for _, tasks := range l.projectTasks {
@@ -137,7 +141,7 @@ func (l *TaskList) getTaskBy(idString string) (*Task, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("task with ID \"%d\" not found.\n", id)
+	return nil, fmt.Errorf("task with ID \"%v\" not found.\n", id)
 }
 
 func (l *TaskList) nextID() int64 {
