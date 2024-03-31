@@ -43,7 +43,7 @@ func TestIsPreviousToCurrentDate(t *testing.T) {
 	}
 }
 
-func TestTask_IsPreviousTo(t1 *testing.T) {
+func TestTask_IsDue(t *testing.T) {
 	type taskFields struct {
 		id          identifier
 		description string
@@ -87,14 +87,14 @@ func TestTask_IsPreviousTo(t1 *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t1.Run(tt.name, func(t1 *testing.T) {
-			t := &Task{
+		t.Run(tt.name, func(t1 *testing.T) {
+			task := &Task{
 				id:          tt.taskFields.id,
 				description: tt.taskFields.description,
 				done:        tt.taskFields.taskDone,
 				deadline:    tt.taskFields.deadline,
 			}
-			if got := t.IsDue(tt.date); got != tt.want {
+			if got := task.IsDue(tt.date); got != tt.want {
 				t1.Errorf("IsDue() = %v, want %v", got, tt.want)
 			}
 		})

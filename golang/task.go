@@ -2,44 +2,9 @@ package main
 
 import (
 	"fmt"
-	"strconv"
+	"io"
 	"time"
 )
-
-var timeFormat = time.DateOnly
-
-type deadline struct {
-	date time.Time
-}
-
-func NewDeadline(deadlineString string) (deadline, error) {
-	date, err := time.Parse(timeFormat, deadlineString)
-	if err != nil {
-		return deadline{}, err
-	}
-
-	return deadline{
-		date: date,
-	}, nil
-}
-
-func (d *deadline) String() string {
-	return fmt.Sprintf(" (%s)", d.date.Format(timeFormat))
-}
-
-func (d *deadline) IsEmpty() bool {
-	return d.date.IsZero()
-}
-
-type identifier int64
-
-func NewIdentifier(idString string) (identifier, error) {
-	id, err := strconv.ParseInt(idString, 10, 64)
-	if err != nil {
-		return -1, err
-	}
-	return identifier(id), nil
-}
 
 // Task describes an elementary task.
 type Task struct {
@@ -95,9 +60,14 @@ func (t *Task) IsPreviousToCurrentDate() bool {
 }
 
 func (t *Task) IsDue(d time.Time) bool {
-	if t.deadline.date.After(d) {
-		return false
-	}
+	return !t.deadline.date.After(d)
+}
 
-	return true
+// write writes the task info to the writer w.
+func (t *Task) write(w io.Writer) {
+	doneChar := ' '
+	if t.IsDone() {
+		doneChar = 'X'
+	}
+	fmt.Fprintf(w, "    [%c] %d:%s %s\n", doneChar, t.GetID(), t.GetDeadline(), t.GetDescription())
 }

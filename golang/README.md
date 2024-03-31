@@ -1,5 +1,8 @@
 # Golang code
 
+## Problem statement
+[Task List Kata](https://kata-log.rocks/task-list-kata)
+
 ## Usage
 
 Only a `go` binary is required. Get it through your distribution repositories or on the [official Golang site](https://golang.org/dl/).
