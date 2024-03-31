@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
 	"strings"
 )
 
@@ -167,9 +168,27 @@ func (l *TaskListReaderWriter) add(args []string) {
 		l.taskList.addProject(projectName)
 		return
 	}
-	if args[0] == "task" {
+
+	taskSubcommand := args[0]
+	if strings.Contains(taskSubcommand, "task") {
 		description := strings.Join(args[2:], " ")
-		err := l.taskList.addTaskToProject(projectName, description)
+		if taskSubcommand == "task" {
+			err := l.taskList.addTaskToProject(projectName, description)
+			if err != nil {
+				fmt.Fprintln(l.w, err)
+			}
+			return
+		}
+
+		s := `^task\(([a-zA-Z0-9]+)\)$`
+		r := regexp.MustCompile(s)
+		submatches := r.FindStringSubmatch(taskSubcommand)
+		if len(submatches) < 2 {
+			fmt.Fprintln(l.w, "empty taskId is not valid, aborting.")
+			return
+		}
+		taskId := submatches[1]
+		err := l.taskList.addTaskToProjectWithCustomId(taskId, projectName, description)
 		if err != nil {
 			fmt.Fprintln(l.w, err)
 		}

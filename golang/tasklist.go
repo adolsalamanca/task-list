@@ -96,6 +96,21 @@ func (l *TaskList) addProject(name string) {
 	l.projectTasks[pName] = make([]*Task, 0)
 }
 
+func (l *TaskList) addTaskToProjectWithCustomId(taskId, projectNameStr, newTaskDescription string) error {
+	pName := projectName(projectNameStr)
+	tasks, ok := l.projectTasks[pName]
+	if !ok {
+		return fmt.Errorf("could not find a project with the name \"%s\".\n", projectNameStr)
+	}
+
+	newTask, err := NewTask(taskId, newTaskDescription, false)
+	if err != nil {
+		return err
+	}
+
+	l.projectTasks[pName] = append(tasks, newTask)
+	return nil
+}
 func (l *TaskList) addTaskToProject(projectNameStr, newTaskDescription string) error {
 	pName := projectName(projectNameStr)
 	tasks, ok := l.projectTasks[pName]
