@@ -15,12 +15,16 @@ type Task struct {
 }
 
 // NewTask initializes a Task with the given ID, description and completion status.
-func NewTask(id int64, description string, done bool) *Task {
+func NewTask(idInt int64, description string, done bool) (*Task, error) {
+	id, err := NewIdentifier(fmt.Sprintf("%v", idInt))
+	if err != nil {
+		return nil, err
+	}
 	return &Task{
 		id:          identifier(id),
 		description: description,
 		done:        done,
-	}
+	}, nil
 }
 
 // GetID returns the task ID.
@@ -69,5 +73,5 @@ func (t *Task) write(w io.Writer) {
 	if t.IsDone() {
 		doneChar = 'X'
 	}
-	fmt.Fprintf(w, "    [%c] %d:%s %s\n", doneChar, t.GetID(), t.GetDeadline(), t.GetDescription())
+	fmt.Fprintf(w, "    [%c] %v:%v %s\n", doneChar, t.GetID(), t.GetDeadline(), t.GetDescription())
 }

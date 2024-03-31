@@ -2,12 +2,16 @@ package main
 
 import "strconv"
 
-type identifier int64
+type identifier string
 
 func NewIdentifier(idString string) (identifier, error) {
-	id, err := strconv.ParseInt(idString, 10, 64)
+	_, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
-	return identifier(id), nil
+	return identifier(idString), nil
+}
+
+func NewCustomIdentifier(customId string) identifier {
+	return identifier(customId)
 }

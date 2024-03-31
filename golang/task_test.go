@@ -62,7 +62,7 @@ func TestTask_IsDue(t *testing.T) {
 		{
 			name: "should return true as task deadline is previous to specified dateString",
 			taskFields: taskFields{
-				id:          0,
+				id:          "0",
 				description: "",
 				taskDone:    false,
 				deadline: deadline{
@@ -75,7 +75,7 @@ func TestTask_IsDue(t *testing.T) {
 		{
 			name: "should return false as task deadline is not previous to specified dateString",
 			taskFields: taskFields{
-				id:          0,
+				id:          "0",
 				description: "",
 				taskDone:    false,
 				deadline: deadline{
